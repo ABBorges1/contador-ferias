@@ -95,6 +95,9 @@ h1 .hl { color: var(--amber); display: inline-block; animation: bob 3s ease-in-o
 .card.util .eyebrow { color: var(--coral); }
 
 .flaps { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; }
+#cal-flaps { flex-direction: column; align-items: flex-start; gap: 14px; }
+.flaps-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
+.clock-row { padding-top: 12px; border-top: 1px dashed var(--line); }
 .unit { display: grid; gap: 6px; justify-items: center; }
 .unit .digits { display: flex; gap: 4px; }
 .unit label { font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
@@ -230,6 +233,57 @@ button:active { transform: translateY(1px); }
 button:focus-visible { outline: 2px solid var(--sky); outline-offset: 3px; }
 
 .note { font-size: 12px; color: var(--muted); max-width: 80ch; margin: 0; }
+
+/* ---------- previsão do tempo no destino ---------- */
+.weather { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px 22px; display: grid; gap: 14px; }
+.weather-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.weather-head h2 { margin: 2px 0 0; }
+.dest-form { display: flex; flex-wrap: wrap; gap: 8px; flex: 1 1 360px; max-width: 520px; }
+.dest-form input {
+  flex: 1 1 200px; min-width: 0; font: 500 15px var(--font-body); color: var(--fg);
+  background: var(--flap); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
+}
+.dest-form input::placeholder { color: var(--muted); }
+.dest-form input:focus-visible { outline: 2px solid var(--sky); outline-offset: 1px; border-color: var(--sky); }
+.place-line { font-family: var(--font-mono); font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+.place-line b { color: var(--fg); font-weight: 600; }
+.place-line select { font: 13px var(--font-mono); color: var(--fg); background: var(--flap); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; max-width: 100%; }
+.days5 { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 760px) { .days5 { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); } }
+.wday {
+  background: var(--flap); border: 1px solid var(--line); border-radius: 12px; padding: 14px 12px;
+  display: grid; gap: 6px; justify-items: center; text-align: center; min-width: 0;
+  animation: rise .5s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i, 0) * 80ms);
+}
+.wday .dname { font-family: var(--font-display); font-weight: 600; text-transform: uppercase; letter-spacing: .1em; font-size: 13px; }
+.wday .ddate { font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin-top: -4px; }
+.wday svg { width: 52px; height: 52px; }
+.wday .cond { font-size: 13px; color: var(--muted); min-height: 2.6em; display: grid; place-items: center; }
+.temps { font-family: var(--font-mono); font-variant-numeric: tabular-nums; display: flex; gap: 8px; align-items: baseline; }
+.temps .max { font-size: 22px; font-weight: 700; color: var(--amber); }
+.temps .min { font-size: 15px; color: var(--sky); }
+.wmeta { font-family: var(--font-mono); font-size: 11px; color: var(--muted); display: grid; gap: 2px; }
+.wmeta b { color: var(--fg); font-weight: 600; }
+.verdict { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; padding: 3px 8px; border-radius: 99px; border: 1px solid currentColor; }
+.verdict.beach { color: var(--amber); } .verdict.ok { color: var(--green); } .verdict.meh { color: var(--sky); } .verdict.bad { color: var(--coral); }
+.w-empty { color: var(--muted); font-size: 14px; border: 1px dashed var(--line); border-radius: 12px; padding: 18px; text-align: center; }
+.w-empty.err { color: var(--coral); border-color: var(--coral); }
+.skel { height: 230px; border-radius: 12px; background: linear-gradient(90deg, var(--flap) 0%, var(--panel-2) 50%, var(--flap) 100%); background-size: 200% 100%; animation: shimmer 1.2s linear infinite; }
+.w-foot { font-size: 12px; color: var(--muted); margin: 0; }
+.w-foot a { color: var(--sky); }
+/* ícones do tempo */
+.wi .sun { fill: var(--amber); } .wi .ray { stroke: var(--amber); stroke-width: 3; stroke-linecap: round; }
+.wi .cloud { fill: #cfe0ec; } .wi .cloud2 { fill: #8aa6bb; }
+.wi .drop { stroke: var(--sky); stroke-width: 3; stroke-linecap: round; }
+.wi .bolt { fill: var(--amber); } .wi .snow { fill: #ffffff; } .wi .fog { stroke: #8aa6bb; stroke-width: 3; stroke-linecap: round; }
+.wi .spin { transform-origin: 32px 32px; animation: sunspin 14s linear infinite; }
+.wi .float { animation: floaty 3s ease-in-out infinite; }
+.wi .fall { animation: fall 1s linear infinite; }
+@keyframes rise { from { opacity: .001; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes shimmer { to { background-position: -200% 0; } }
+@keyframes sunspin { to { transform: rotate(360deg); } }
+@keyframes floaty { 0%,100% { transform: translateX(0); } 50% { transform: translateX(3px); } }
+@keyframes fall { 0% { transform: translateY(-3px); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(5px); opacity: 0; } }
 #confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 30; }
 
 /* ---------- preparar a festa ---------- */
@@ -313,7 +367,7 @@ body.on-vacation .done-banner { display: block; }
       <thead><tr><th>Voo</th><th>Destino</th><th>Embarque</th><th>Portão</th><th>Status</th></tr></thead>
       <tbody><tr>
         <td>FER-2026</td>
-        <td class="dest">FÉRIAS · praia, rede e nada de reunião</td>
+        <td class="dest" id="dest-cell">FÉRIAS · praia, rede e nada de reunião</td>
         <td>16 DEZ 17:00</td>
         <td>Nº 16</td>
         <td><span class="status" id="status">No horário</span></td>
@@ -352,6 +406,22 @@ body.on-vacation .done-banner { display: block; }
         <div class="fact"><b id="f-coffee">—</b><span>cafezinhos (3/dia)</span></div>
       </div>
     </article>
+  </section>
+
+  <section class="weather" aria-label="Previsão do tempo no destino">
+    <div class="weather-head">
+      <div>
+        <p class="eyebrow">Meteorologia do destino</p>
+        <h2 class="section-title">Como está o tempo onde você vai descansar</h2>
+      </div>
+      <form class="dest-form" id="dest-form" autocomplete="off">
+        <input id="dest-input" name="dest" type="text" placeholder="Ex.: Ubatuba, São Paulo" aria-label="Local das férias">
+        <button type="submit" class="primary" id="dest-btn">Ver previsão</button>
+      </form>
+    </div>
+    <div class="place-line" id="place-line" hidden></div>
+    <div id="forecast"><div class="w-empty">Digite a cidade das suas férias para ver a previsão dos próximos 5 dias. O destino fica salvo neste navegador.</div></div>
+    <p class="w-foot" id="w-foot">Previsão: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>. Atualiza sozinha a cada 3 horas.</p>
   </section>
 
   <section class="flight" aria-label="Progresso do ano de trabalho">
@@ -511,15 +581,20 @@ body.on-vacation .done-banner { display: block; }
     });
   }
 
+  // dias em cima, relógio (hh:mm:ss) embaixo
   const calWrap = document.getElementById("cal-flaps");
+  const rowDays = document.createElement("div"), rowTime = document.createElement("div");
+  rowDays.className = "flaps-row"; rowTime.className = "flaps-row clock-row";
+  calWrap.append(rowDays, rowTime);
   const units = [["dias", 3, "big"], ["horas", 2, "sky"], ["min", 2, "sky"], ["seg", 2, "sky"]];
   const calEls = [];
   units.forEach(([label, n, cls], i) => {
-    if (i > 0) { const sep = document.createElement("span"); sep.className = "sep"; sep.textContent = i === 1 ? "" : ":"; if (i > 1) calWrap.appendChild(sep); }
+    const row = i === 0 ? rowDays : rowTime;
+    if (i > 1) { const sep = document.createElement("span"); sep.className = "sep"; sep.textContent = ":"; row.appendChild(sep); }
     const u = document.createElement("div"); u.className = "unit";
     const dg = document.createElement("div"); dg.className = "digits";
     const lb = document.createElement("label"); lb.textContent = label;
-    u.append(dg, lb); calWrap.appendChild(u);
+    u.append(dg, lb); row.appendChild(u);
     calEls.push(makeDigits(dg, n, cls));
   });
   const utilEls = makeDigits(document.getElementById("util-digits"), 3, "big coral");
@@ -972,6 +1047,162 @@ body.on-vacation .done-banner { display: block; }
   setInterval(tick, 1000);
 
   const msgs = () => messages(stats, Math.ceil((VACATION - new Date()) / 864e5));
+  // =====================================================================
+  //  PREVISÃO DO TEMPO NO DESTINO (Open-Meteo: sem chave, sem cadastro)
+  // =====================================================================
+  const W_KEY = "ferias.destino";
+  const UF = { ac:"acre", al:"alagoas", ap:"amapa", am:"amazonas", ba:"bahia", ce:"ceara", df:"distrito federal", es:"espirito santo", go:"goias", ma:"maranhao", mt:"mato grosso", ms:"mato grosso do sul", mg:"minas gerais", pa:"para", pb:"paraiba", pr:"parana", pe:"pernambuco", pi:"piaui", rj:"rio de janeiro", rn:"rio grande do norte", rs:"rio grande do sul", ro:"rondonia", rr:"roraima", sc:"santa catarina", sp:"sao paulo", se:"sergipe", to:"tocantins" };
+  const norm = s => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+  const WMO = {
+    0:["Céu limpo","sun"], 1:["Quase sem nuvens","sun"], 2:["Sol entre nuvens","partly"], 3:["Nublado","cloud"],
+    45:["Nevoeiro","fog"], 48:["Nevoeiro com geada","fog"],
+    51:["Garoa fraca","drizzle"], 53:["Garoa","drizzle"], 55:["Garoa forte","drizzle"], 56:["Garoa gelada","drizzle"], 57:["Garoa gelada","drizzle"],
+    61:["Chuva fraca","rain"], 63:["Chuva","rain"], 65:["Chuva forte","rain"], 66:["Chuva gelada","rain"], 67:["Chuva gelada forte","rain"],
+    71:["Neve fraca","snow"], 73:["Neve","snow"], 75:["Neve forte","snow"], 77:["Grãos de neve","snow"],
+    80:["Pancadas fracas","rain"], 81:["Pancadas de chuva","rain"], 82:["Pancadas fortes","rain"], 85:["Pancadas de neve","snow"], 86:["Neve forte","snow"],
+    95:["Trovoadas","storm"], 96:["Trovoada com granizo","storm"], 99:["Trovoada com granizo","storm"],
+  };
+  const CLOUD = `<path class="cloud" d="M20 46h26a10 10 0 0 0 0-20 14 14 0 0 0-27-3A11 11 0 0 0 20 46z"/>`;
+  const CLOUD_D = `<path class="cloud2" d="M20 44h26a10 10 0 0 0 0-20 14 14 0 0 0-27-3A11 11 0 0 0 20 44z"/>`;
+  const SUN = (cx, cy, r) => `<g class="spin" style="transform-origin:${cx}px ${cy}px"><circle class="sun" cx="${cx}" cy="${cy}" r="${r}"/>${[0,45,90,135,180,225,270,315].map(a => { const t = a * Math.PI / 180, r1 = r + 4, r2 = r + 9; return `<line class="ray" x1="${cx + Math.cos(t) * r1}" y1="${cy + Math.sin(t) * r1}" x2="${cx + Math.cos(t) * r2}" y2="${cy + Math.sin(t) * r2}"/>`; }).join("")}</g>`;
+  const DROPS = (cls) => [22, 32, 42].map((x, i) => cls === "snow"
+    ? `<circle class="snow fall" style="animation-delay:${i * .3}s" cx="${x}" cy="54" r="2.6"/>`
+    : `<line class="drop fall" style="animation-delay:${i * .3}s" x1="${x}" y1="51" x2="${x - 3}" y2="58"/>`).join("");
+  const ICONS = {
+    sun: SUN(32, 32, 12),
+    partly: `${SUN(24, 24, 9)}<g class="float">${CLOUD}</g>`,
+    cloud: `<g class="float">${CLOUD}</g>`,
+    fog: `<g class="float">${CLOUD}</g><line class="fog" x1="14" y1="52" x2="50" y2="52"/><line class="fog" x1="20" y1="58" x2="44" y2="58"/>`,
+    drizzle: `<g class="float">${CLOUD}</g>${DROPS("drop")}`,
+    rain: `<g class="float">${CLOUD_D}</g>${DROPS("drop")}`,
+    snow: `<g class="float">${CLOUD}</g>${DROPS("snow")}`,
+    storm: `<g class="float">${CLOUD_D}</g><polygon class="bolt" points="34,40 26,54 32,54 28,63 40,48 34,48 38,40"/>`,
+  };
+  const wIcon = kind => `<svg class="wi" viewBox="0 0 64 64" aria-hidden="true">${ICONS[kind] || ICONS.cloud}</svg>`;
+  function verdict(code, max, rain) {
+    const kind = (WMO[code] || [, "cloud"])[1];
+    if (kind === "storm") return ["bad", "Fique na rede coberta"];
+    if (code <= 2 && max >= 26 && rain < 40) return ["beach", "Dia de praia"];
+    if (code <= 3 && rain < 50) return ["ok", "Bom pra passear"];
+    if (rain < 70) return ["meh", "Leve guarda-chuva"];
+    return ["bad", "Dia de série e pipoca"];
+  }
+
+  const fc = $("forecast"), placeLine = $("place-line"), destInput = $("dest-input");
+  let wPlace = null, wAlts = [], wTimer = null;
+  const loadDest = () => { try { return JSON.parse(localStorage.getItem(W_KEY) || "null"); } catch (e) { return null; } };
+  const saveDest = p => { try { localStorage.setItem(W_KEY, JSON.stringify(p)); } catch (e) {} };
+  const placeLabel = r => [r.name, r.admin1 && r.admin1 !== r.name ? r.admin1 : null, r.country].filter(Boolean).join(", ");
+
+  async function geocode(q) {
+    const raw = q.trim();
+    const parts = raw.includes(",") ? raw.split(",").map(s => s.trim()).filter(Boolean) : null;
+    const words = raw.split(/\s+/);
+    const tries = parts ? [[parts[0], parts.slice(1).join(" ")]] : words.map((_, i) => [words.slice(0, words.length - i).join(" "), words.slice(words.length - i).join(" ")]);
+    for (const [name, region] of tries) {
+      if (name.length < 2) continue;
+      const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=10&language=pt&format=json`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("geo");
+      const data = await res.json();
+      const list = data.results || [];
+      if (!list.length) continue;
+      const reg = norm(region), regFull = UF[reg] || reg;
+      const scored = list.map(r => {
+        const hay = norm([r.admin1, r.admin2, r.country, r.country_code].join(" "));
+        let s = 0;
+        if (regFull) regFull.split(" ").forEach(w => { if (w && hay.includes(w)) s += 2; });
+        if (r.country_code === "BR") s += 1;
+        s += Math.log10((r.population || 1) + 1) / 10;
+        return [s, r];
+      }).sort((a, b) => b[0] - a[0]).map(x => x[1]);
+      if (!region || scored.length) return scored;
+    }
+    return [];
+  }
+
+  function renderSkeleton() {
+    fc.innerHTML = `<div class="days5">${Array.from({ length: 5 }, () => `<div class="skel"></div>`).join("")}</div>`;
+  }
+  function renderPlaceLine() {
+    if (!wPlace) { placeLine.hidden = true; return; }
+    placeLine.hidden = false;
+    let html = `<span>Destino: <b>${wPlace.label}</b></span><span>${wPlace.lat.toFixed(2)}°, ${wPlace.lon.toFixed(2)}°</span>`;
+    if (wAlts.length > 1) {
+      html += `<label>Não é esse? <select id="alt-select">${wAlts.map((r, i) => `<option value="${i}"${placeLabel(r) === wPlace.label && r.latitude === wPlace.lat ? " selected" : ""}>${placeLabel(r)}</option>`).join("")}</select></label>`;
+    }
+    placeLine.innerHTML = html;
+    const sel = $("alt-select");
+    if (sel) sel.addEventListener("change", () => { const r = wAlts[+sel.value]; setPlace({ name: r.name, label: placeLabel(r), lat: r.latitude, lon: r.longitude }); });
+  }
+
+  async function loadForecast() {
+    if (!wPlace) return;
+    renderSkeleton();
+    try {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${wPlace.lat}&longitude=${wPlace.lon}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_speed_10m_max,uv_index_max&timezone=auto&forecast_days=6`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("fc");
+      const d = (await res.json()).daily;
+      let beach = 0;
+      const cards = [1, 2, 3, 4, 5].map((i, k) => {
+        const [y, m, dd] = d.time[i].split("-").map(Number);
+        const dt = new Date(y, m - 1, dd);
+        const code = d.weather_code[i], max = Math.round(d.temperature_2m_max[i]), min = Math.round(d.temperature_2m_min[i]);
+        const rain = d.precipitation_probability_max?.[i] ?? 0, mm = d.precipitation_sum?.[i] ?? 0;
+        const wind = Math.round(d.wind_speed_10m_max?.[i] ?? 0), uv = d.uv_index_max?.[i];
+        const [cond, kind] = WMO[code] || ["Tempo instável", "cloud"];
+        const [vc, vt] = verdict(code, max, rain);
+        if (vc === "beach") beach++;
+        return `<article class="wday" style="--i:${k}">
+          <div class="dname">${k === 0 ? "Amanhã" : dt.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "")}</div>
+          <div class="ddate">${pad(dd)}/${pad(m)}</div>
+          ${wIcon(kind)}
+          <div class="cond">${cond}</div>
+          <div class="temps"><span class="max">${max}°</span><span class="min">${min}°</span></div>
+          <div class="wmeta"><span>Chuva <b>${rain}%</b>${mm >= .5 ? ` · ${mm.toFixed(0)} mm` : ""}</span><span>Vento <b>${wind} km/h</b></span>${uv != null ? `<span>UV <b>${Math.round(uv)}</b></span>` : ""}</div>
+          <span class="verdict ${vc}">${vt}</span>
+        </article>`;
+      });
+      fc.innerHTML = `<div class="days5">${cards.join("")}</div>`;
+      const daysToTrip = Math.ceil((LAST_DAY - dayOnly(new Date())) / 864e5);
+      const tripNote = daysToTrip > 15
+        ? `A previsão alcança até 16 dias, então a do dia do embarque (16/12) aparece a partir de ${new Date(2026, 11, 1).toLocaleDateString("pt-BR")}.`
+        : daysToTrip >= 0 ? "Já dá para consultar o tempo do embarque em sites de previsão estendida." : "";
+      $("w-foot").innerHTML = `${beach} de 5 dias com cara de praia em ${wPlace.name}. ${tripNote} Previsão: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>, atualizada a cada 3 horas (última às ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}).`;
+      pushLine(`Meteorologia de <em>${wPlace.name}</em>: ${beach} dia(s) de praia nos próximos 5.`);
+    } catch (e) {
+      fc.innerHTML = `<div class="w-empty err">Não consegui buscar a previsão agora. Confira a conexão com a internet e clique em "Ver previsão" de novo.</div>`;
+    }
+  }
+  function setPlace(p) {
+    wPlace = p; saveDest(p);
+    destInput.value = p.label;
+    $("dest-cell").textContent = `FÉRIAS · ${p.name.toUpperCase()}`;
+    renderPlaceLine();
+    loadForecast();
+    clearInterval(wTimer); wTimer = setInterval(loadForecast, 3 * 36e5);
+  }
+  $("dest-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const q = destInput.value.trim();
+    if (q.length < 2) { fc.innerHTML = `<div class="w-empty err">Digite o nome da cidade, por exemplo "Ubatuba, São Paulo".</div>`; return; }
+    if (wPlace && q === wPlace.label) { loadForecast(); return; }
+    renderSkeleton();
+    $("dest-btn").disabled = true;
+    try {
+      const list = await geocode(q);
+      if (!list.length) { fc.innerHTML = `<div class="w-empty err">Não encontrei "${q.replace(/</g, "&lt;")}". Tente só o nome da cidade, como "Ubatuba", ou cidade e estado separados por vírgula.</div>`; return; }
+      wAlts = list.slice(0, 8);
+      const r = list[0];
+      setPlace({ name: r.name, label: placeLabel(r), lat: r.latitude, lon: r.longitude });
+    } catch (err) {
+      fc.innerHTML = `<div class="w-empty err">Não consegui procurar o destino agora. Confira a conexão com a internet e tente de novo.</div>`;
+    } finally { $("dest-btn").disabled = false; }
+  });
+  const savedDest = loadDest();
+  if (savedDest && typeof savedDest.lat === "number") setPlace(savedDest);
+
   pushLine("Conectando à torre de controle de Franca…");
   setTimeout(() => pushLine(msgs()[0]), 600);
   setTimeout(() => pushLine(msgs()[2]), 1300);
