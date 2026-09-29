@@ -125,8 +125,57 @@ h1 .hl { color: var(--amber); display: inline-block; animation: bob 3s ease-in-o
 .track { position: relative; height: 56px; margin-top: 12px; }
 .track .rail { position: absolute; left: 0; right: 0; top: 50%; border-top: 2px dashed var(--line); }
 .track .done { position: absolute; left: 0; top: calc(50% - 1px); height: 3px; background: linear-gradient(90deg, var(--sky), var(--amber)); border-radius: 2px; width: 0; transition: width 1.6s cubic-bezier(.2,.8,.2,1); }
-.track .plane { position: absolute; top: 50%; left: 0; transform: translate(-50%, -50%); transition: left 1.6s cubic-bezier(.2,.8,.2,1); color: var(--amber); filter: drop-shadow(0 0 8px rgba(255,191,77,.6)); }
+.track .plane { position: absolute; top: 50%; left: 0; transform: translate(-50%, -50%); transition: left 1.6s cubic-bezier(.2,.8,.2,1); color: var(--amber); filter: drop-shadow(0 0 8px rgba(255,191,77,.6)); z-index: 3; }
 .track .plane svg { width: 34px; height: 34px; display: block; animation: wobble 2.4s ease-in-out infinite; }
+
+/* ---------- avião clicável: "calma, já está acabando" ---------- */
+.plane-btn { all: unset; display: block; cursor: grab; border-radius: 50%; padding: 6px; position: relative; -webkit-tap-highlight-color: transparent; }
+.plane-btn:hover .plane-body { transform: scale(1.12); }
+.plane-btn:hover, .plane-btn:active { background: transparent; color: inherit; transform: none; }
+.plane-btn:active { cursor: grabbing; }
+.plane-btn:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }
+.plane-body { display: block; transition: transform .2s; }
+.plane-btn::after { /* pulso "me clique" */
+  content: ""; position: absolute; inset: 2px; border-radius: 50%; border: 2px solid var(--amber); opacity: 0;
+  animation: ping 2.8s ease-out 1.5s infinite; pointer-events: none;
+}
+.plane.tried .plane-btn::after { animation: none; }
+.plane.nudge .plane-body { animation: nudge .95s cubic-bezier(.3,.6,.3,1); }
+.plane.dizzy .plane-body { animation: loop 1.2s cubic-bezier(.5,0,.5,1); }
+.plane .speed { position: absolute; right: 70%; top: 50%; width: 0; height: 2px; transform: translateY(-50%); pointer-events: none;
+  background: repeating-linear-gradient(90deg, var(--sky) 0 8px, transparent 8px 13px); opacity: 0; }
+.plane.nudge .speed { animation: speed .95s ease-out; }
+.puff { position: absolute; top: 50%; width: 14px; height: 14px; border-radius: 50%; background: var(--fg); opacity: 0; pointer-events: none; z-index: 2;
+  animation: puff .7s ease-out forwards; }
+.bubble {
+  position: absolute; bottom: calc(50% + 30px); left: 0; z-index: 4; width: max-content; max-width: min(300px, 80vw);
+  background: var(--fg); color: #0a1a28; font-family: var(--font-display); font-weight: 600; font-size: 15px; line-height: 1.25;
+  padding: 10px 14px; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.4); text-wrap: balance; pointer-events: none;
+  transform-origin: var(--tail, 50%) 100%;
+}
+.bubble small { display: block; font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: #3c566b; margin-top: 3px; }
+.bubble::after { content: ""; position: absolute; top: 100%; left: var(--tail, 50%); transform: translateX(-50%); border: 8px solid transparent; border-top-color: var(--fg); }
+.bubble.show { animation: pop .45s cubic-bezier(.2,1.6,.4,1) both; }
+.bubble.hide { animation: popout .25s ease-in forwards; }
+.nope { animation: nope .5s ease-in-out; }
+
+@keyframes ping { 0% { transform: scale(.8); opacity: .8; } 70%,100% { transform: scale(1.9); opacity: 0; } }
+@keyframes nudge {
+  0% { transform: translateX(0); }
+  22% { transform: translateX(var(--push, 90px)) scaleX(1.25) scaleY(.85); }
+  34% { transform: translateX(var(--push, 90px)) rotate(-12deg); }
+  42% { transform: translateX(var(--push, 90px)) rotate(10deg); }
+  50% { transform: translateX(var(--push, 90px)) rotate(-6deg); }
+  72% { transform: translateX(-14px) scaleX(.8) scaleY(1.15); }
+  84% { transform: translateX(6px); }
+  100% { transform: translateX(0); }
+}
+@keyframes loop { 0% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-34px) rotate(-180deg) scale(1.2); } 100% { transform: translateY(0) rotate(-360deg); } }
+@keyframes speed { 0% { width: 0; opacity: 0; } 20% { width: 70px; opacity: .9; } 60% { opacity: 0; width: 20px; } 100% { opacity: 0; } }
+@keyframes puff { 0% { transform: translate(-50%,-50%) scale(.3); opacity: .7; } 100% { transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, -20px))) scale(1.6); opacity: 0; } }
+@keyframes pop { 0% { transform: scale(.2) translateY(10px); opacity: 0; } 100% { transform: scale(1) translateY(0); opacity: 1; } }
+@keyframes popout { to { transform: scale(.6) translateY(6px); opacity: 0; } }
+@keyframes nope { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(3px); } }
 .track .pin { position: absolute; top: 50%; width: 12px; height: 12px; border-radius: 50%; transform: translate(-50%, -50%); border: 2px solid var(--muted); background: var(--bg); }
 .track .pin.end { right: -6px; left: auto; transform: translate(0, -50%); border-color: var(--coral); background: var(--coral); box-shadow: 0 0 12px var(--coral); }
 .track-labels { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
@@ -316,7 +365,8 @@ body.on-vacation .done-banner { display: block; }
       <div class="done" id="done"></div>
       <span class="pin" style="left:0"></span>
       <span class="pin end"></span>
-      <div class="plane" id="plane"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg></div>
+      <div class="plane" id="plane"><span class="speed"></span><button type="button" class="plane-btn" id="plane-btn" aria-label="Empurrar o avião para frente"><span class="plane-body"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg></span></button></div>
+      <div class="bubble" id="bubble" hidden role="status"></div>
     </div>
     <div class="track-labels"><span id="lbl-done">—</span><span id="lbl-left">—</span></div>
   </section>
@@ -930,6 +980,87 @@ body.on-vacation .done-banner { display: block; }
   setInterval(nextMsg, 6000);
   $("btn-msg").addEventListener("click", nextMsg);
   $("btn-confetti").addEventListener("click", () => { confetti(); pushLine("Confete liberado. Ensaio geral da comemoração."); });
+
+  // ---- avião apressado: "calma, já está acabando" ----
+  const plane = $("plane"), planeBtn = $("plane-btn"), bubble = $("bubble"), track = plane.parentElement;
+  let pushes = 0, bubbleTimer = null, busy = false;
+  const left = () => (stats ? stats.work : 0);
+  const CALM = [
+    () => ["Ei, calma! Já está acabando.", "Empurrar o avião não adianta o relógio."],
+    () => ["Ô apressado! Respira fundo.", `Faltam só ${left()} dias úteis.`],
+    () => ["Torre de controle: decolagem antecipada NEGADA.", "Motivo: ainda tem expediente."],
+    () => ["Piloto automático ligado.", "Ele chega no horário certinho: 16/12, 17:00."],
+    () => ["Se continuar empurrando, eu volto uma casinha.", "Brincadeira. Mas calma aí."],
+    () => ["Vai pegar um café. Quando voltar, já andei um pouquinho.", `Previsão: ${fmt(left() * 3)} cafés até lá.`],
+    () => ["Paciência também conta como dia útil.", "Pergunta pro RH."],
+    () => ["O RH está vendo você clicar.", "Disfarça e volta pra planilha."],
+    () => ["Tá bom, tá bom. Uma pirueta pra você se distrair!", "Mas continuo no mesmo lugar."],
+    () => ["Combustível de férias: carregando…", `${fmt(Math.floor(Math.max(0, VACATION - new Date()) / 36e5))} horas pra encher o tanque.`],
+    () => ["Eu também quero chegar, viu?", "Mas o calendário manda aqui."],
+    () => ["Última dica do comandante:", "aperte os cintos e segure a ansiedade."],
+  ];
+  function boing() {
+    const c = Audio_.ctx; if (!c || c.state !== "running") return;
+    const t = c.currentTime, o = c.createOscillator(), g = c.createGain();
+    o.type = "triangle"; o.frequency.setValueAtTime(700, t); o.frequency.exponentialRampToValueAtTime(180, t + .35);
+    g.gain.setValueAtTime(.18, t); g.gain.exponentialRampToValueAtTime(0.001, t + .4);
+    o.connect(g); g.connect(Audio_.out); o.start(t); o.stop(t + .42);
+    const o2 = c.createOscillator(), g2 = c.createGain(); o2.type = "sine";
+    o2.frequency.setValueAtTime(300, t + .45); o2.frequency.linearRampToValueAtTime(520, t + .55); o2.frequency.linearRampToValueAtTime(260, t + .7);
+    g2.gain.setValueAtTime(0.0001, t + .44); g2.gain.exponentialRampToValueAtTime(.12, t + .47); g2.gain.exponentialRampToValueAtTime(0.001, t + .75);
+    o2.connect(g2); g2.connect(Audio_.out); o2.start(t + .44); o2.stop(t + .78);
+  }
+  function puffs() {
+    const x = plane.offsetLeft;
+    for (let i = 0; i < 5; i++) {
+      const p = document.createElement("span"); p.className = "puff";
+      p.style.left = (x - 6) + "px";
+      p.style.setProperty("--dx", (-10 - Math.random() * 26) + "px");
+      p.style.setProperty("--dy", (Math.random() * 40 - 20) + "px");
+      p.style.animationDelay = (.55 + i * .04) + "s";
+      track.appendChild(p);
+      setTimeout(() => p.remove(), 1500);
+    }
+  }
+  function say([line, sub]) {
+    bubble.innerHTML = `${line}<small>${sub}</small>`;
+    bubble.hidden = false;
+    bubble.classList.remove("show", "hide"); void bubble.offsetWidth; bubble.classList.add("show");
+    // posiciona o balão sobre o avião, sem sair da trilha
+    const tw = track.clientWidth, bw = bubble.offsetWidth, px = plane.offsetLeft;
+    const bx = Math.min(Math.max(px - bw / 2, -4), tw - bw + 4);
+    bubble.style.left = bx + "px";
+    bubble.style.setProperty("--tail", Math.min(Math.max(px - bx, 18), bw - 18) + "px");
+    clearTimeout(bubbleTimer);
+    bubbleTimer = setTimeout(() => { bubble.classList.add("hide"); setTimeout(() => { bubble.hidden = true; }, 260); }, 3600);
+  }
+  function hurry() {
+    if (busy) return;
+    busy = true;
+    const idx = pushes < CALM.length ? pushes : Math.floor(Math.random() * CALM.length);
+    pushes++;
+    plane.classList.add("tried");
+    const room = track.clientWidth - plane.offsetLeft;
+    plane.style.setProperty("--push", Math.max(24, Math.min(110, room - 20)) + "px");
+    const cls = idx === 8 ? "dizzy" : "nudge";
+    plane.classList.remove("nudge", "dizzy"); void plane.offsetWidth; plane.classList.add(cls);
+    if (cls === "nudge") puffs();
+    ctx(); boing();
+    setTimeout(() => {
+      say(CALM[idx]());
+      const util = $("util-digits");
+      util.classList.remove("nope"); void util.offsetWidth; util.classList.add("nope");
+    }, cls === "nudge" ? 420 : 600);
+    if (pushes === 1) pushLine("Passageiro tentou empurrar o avião. Tripulação acalmando…");
+    else if (pushes === 5) pushLine(`Alerta: <em>${pushes}</em> tentativas de adiantar as férias. Nenhuma funcionou.`);
+    else if (pushes === 15) pushLine("Recorde de ansiedade batido. Parabéns?");
+    setTimeout(() => { busy = false; plane.classList.remove("nudge", "dizzy"); }, cls === "nudge" ? 950 : 1200);
+  }
+  planeBtn.addEventListener("click", hurry);
+  // arrastar para a direita também conta como "empurrar"
+  let dragX = null;
+  planeBtn.addEventListener("pointerdown", e => { dragX = e.clientX; });
+  addEventListener("pointerup", e => { if (dragX !== null && e.clientX - dragX > 25) hurry(); dragX = null; });
 })();
 </script>
 </body>
