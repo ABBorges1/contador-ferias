@@ -304,7 +304,32 @@ button.primary:hover { background: #ffd27f; }
   background: radial-gradient(ellipse at center, rgba(20,8,40,.82), rgba(3,6,14,.95));
   padding-inline: 16px; padding-block: calc(env(safe-area-inset-top, 0px) + 16px) calc(env(safe-area-inset-bottom, 0px) + 16px);
   overflow: hidden;
+  --kick: 0;
 }
+/* clarão a cada batida */
+#party::before {
+  content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; opacity: 0;
+  background: radial-gradient(circle at 50% 45%, var(--flash, rgba(255,191,77,.45)), transparent 65%);
+}
+#party.beat::before { animation: flash .38s ease-out; }
+#party.drop::before { animation: flash .6s ease-out; background: radial-gradient(circle at 50% 45%, rgba(255,255,255,.55), rgba(255,95,162,.25) 40%, transparent 75%); }
+/* anel de graves contínuo */
+.bass-ring {
+  position: absolute; left: 50%; top: 45%; width: 60vmin; height: 60vmin; border-radius: 50%; z-index: 1; pointer-events: none;
+  transform: translate(-50%, -50%) scale(calc(.8 + var(--kick) * .5));
+  border: 3px solid rgba(95,212,232,.5); box-shadow: 0 0 40px rgba(95,212,232,.35), inset 0 0 40px rgba(255,95,162,.25);
+  opacity: calc(.15 + var(--kick) * .85);
+}
+/* equalizador */
+.eq { position: absolute; left: 0; right: 0; bottom: env(safe-area-inset-bottom, 0px); height: 22vh; z-index: 1; display: flex; align-items: flex-end; gap: 3px; padding-inline: 8px; pointer-events: none; opacity: .55; }
+.eq span { flex: 1; height: 100%; transform-origin: bottom; transform: scaleY(.02); border-radius: 3px 3px 0 0;
+  background: linear-gradient(0deg, var(--sky), #b98bff 55%, var(--coral)); }
+.trophy-wrap { display: inline-block; }
+.trophy-wrap.jump { animation: jump .34s cubic-bezier(.2,1.8,.4,1); }
+.beat-count { font-family: var(--font-mono); font-size: 12px; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
+.beat-count b { color: var(--amber); font-variant-numeric: tabular-nums; }
+@keyframes flash { 0% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes jump { 0% { transform: translateY(0) scale(1); } 40% { transform: translateY(-26px) scale(1.18) rotate(-8deg); } 100% { transform: translateY(0) scale(1); } }
 #fireworks { position: absolute; inset: 0; width: 100%; height: 100%; }
 .party-inner { position: relative; z-index: 2; display: grid; gap: 14px; justify-items: center; max-width: 900px; }
 .trophy { width: clamp(80px, 16vw, 140px); color: var(--amber); filter: drop-shadow(0 0 24px rgba(255,191,77,.8)); animation: trophy 1s ease-in-out infinite; }
@@ -313,7 +338,9 @@ button.primary:hover { background: #ffd27f; }
   font-size: clamp(64px, 18vw, 190px); letter-spacing: -.02em;
   background: linear-gradient(90deg, #ffbf4d, #ff7a5c, #ff5fa2, #b98bff, #5fd4e8, #6fe0a0, #ffbf4d);
   background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
-  animation: rainbow 2.5s linear infinite, pump .5s ease-in-out infinite alternate;
+  animation: rainbow 2.5s linear infinite;
+  transform: scale(calc(1 + var(--kick) * .16)) rotate(calc(var(--kick) * -2deg));
+  filter: brightness(calc(1 + var(--kick) * .5)) drop-shadow(0 0 calc(var(--kick) * 30px) rgba(255,191,77,.7));
 }
 .party-sub { font-family: var(--font-display); font-size: clamp(18px, 4vw, 30px); color: var(--fg); margin: 0; font-weight: 600; text-wrap: balance; }
 .party-sub em { font-style: normal; color: var(--amber); }
@@ -444,11 +471,12 @@ body.on-vacation .done-banner { display: block; }
   <section class="party-prep" aria-label="Preparar a comemoração">
     <p class="eyebrow">Festa programada · 16/12 às 17:00:00</p>
     <h2 class="section-title">Preparar a comemoração</h2>
-    <p>Na hora exata a tela explode em fogos, confete, buzina, torcida e um hino de vitória. O navegador só libera som depois de um clique, então ative o som antes e deixe esta aba aberta no dia 16/12.</p>
+    <p>Na hora exata toca a música do meme do caixão e a tela reage a cada batida: fogos no ritmo, clarões, troféu pulando e equalizador. O navegador só libera som depois de um clique, então ative o som antes e deixe esta aba aberta no dia 16/12.</p>
     <div class="actions">
       <button type="button" class="primary" id="btn-arm">Ativar som da festa</button>
       <button type="button" data-party="test">Testar comemoração</button>
-      <label class="file-btn">Usar minha música (MP3)<input type="file" id="music-file" accept="audio/*"></label>
+      <label class="file-btn">Trocar música (MP3)<input type="file" id="music-file" accept="audio/*"></label>
+      <button type="button" id="btn-music-reset" hidden>Voltar à música padrão</button>
     </div>
     <div class="armed" id="armed">Som desativado. Sem clique, a festa acontece sem áudio.</div>
   </section>
@@ -482,11 +510,14 @@ body.on-vacation .done-banner { display: block; }
 
   <div id="party" hidden role="dialog" aria-modal="true" aria-label="Comemoração das férias">
     <canvas id="fireworks" aria-hidden="true"></canvas>
+    <div class="bass-ring" aria-hidden="true"></div>
+    <div class="eq" id="eq" aria-hidden="true"></div>
     <div class="party-inner">
-      <svg class="trophy" viewBox="0 0 64 64" fill="currentColor" aria-hidden="true"><path d="M18 6h28v6h10v6c0 7-5 12-11 13-2 6-6 9-10 10v7h8v6H21v-6h8v-7c-4-1-8-4-10-10C13 30 8 25 8 18v-6h10V6zm-4 12c0 3 2 6 5 7-1-2-1-5-1-7h-4zm36 0h-4c0 2 0 5-1 7 3-1 5-4 5-7zM17 54h30v4H17z"/></svg>
+      <span class="trophy-wrap" id="trophy-wrap"><svg class="trophy" viewBox="0 0 64 64" fill="currentColor" aria-hidden="true"><path d="M18 6h28v6h10v6c0 7-5 12-11 13-2 6-6 9-10 10v7h8v6H21v-6h8v-7c-4-1-8-4-10-10C13 30 8 25 8 18v-6h10V6zm-4 12c0 3 2 6 5 7-1-2-1-5-1-7h-4zm36 0h-4c0 2 0 5-1 7 3-1 5-4 5-7zM17 54h30v4H17z"/></svg></span>
       <h2 class="party-title">FÉRIAS!</h2>
       <p class="party-sub">Mais um ano vencido. <em>Campeões de 2026!</em></p>
       <div class="party-ticker" id="party-ticker"></div>
+      <div class="beat-count" id="beat-count">Batidas: <b>0</b></div>
       <div class="party-actions">
         <button type="button" class="primary" id="btn-play">Tocar a festa</button>
         <button type="button" id="btn-more">Mais fogos</button>
@@ -721,9 +752,10 @@ body.on-vacation .done-banner { display: block; }
   const $ = id => document.getElementById(id);
 
   // =====================================================================
-  //  FESTA: áudio sintetizado (hino original), fogos, torcida e buzina
+  //  FESTA: música (arquivo) com detecção de batidas, fogos, torcida e buzina
   // =====================================================================
-  const Audio_ = { ctx: null, out: null, music: null, loopTimer: null, playing: false, file: null, fileUrl: null, lock: null };
+  const DEFAULT_SONG = "sons/caixao-astronomia.mp3";
+  const Audio_ = { ctx: null, out: null, an: null, music: null, loopTimer: null, playing: false, file: null, fileSrc: null, fileUrl: null, fileName: null, lock: null };
   function ctx() {
     if (!Audio_.ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
@@ -733,7 +765,10 @@ body.on-vacation .done-banner { display: block; }
       comp.threshold.value = -14; comp.ratio.value = 6;
       const master = c.createGain(); master.gain.value = .8;
       master.connect(comp); comp.connect(c.destination);
-      Audio_.ctx = c; Audio_.out = master;
+      // analisador: a música passa por aqui para detectar as batidas
+      const an = c.createAnalyser(); an.fftSize = 1024; an.smoothingTimeConstant = 0;
+      an.connect(master);
+      Audio_.ctx = c; Audio_.out = master; Audio_.an = an;
     }
     if (Audio_.ctx.state === "suspended") Audio_.ctx.resume().catch(() => {});
     return Audio_.ctx;
@@ -864,7 +899,7 @@ body.on-vacation .done-banner { display: block; }
     [[0,72,.5],[.5,76,.5],[1,79,.5],[1.5,84,2.5]],
   ];
   function scheduleSong(t0) {
-    const c = Audio_.ctx, bus = c.createGain(); bus.gain.value = .9; bus.connect(Audio_.out);
+    const c = Audio_.ctx, bus = c.createGain(); bus.gain.value = .9; bus.connect(Audio_.an);
     Audio_.music = bus;
     CHORDS.forEach(([root, tri], bar) => {
       const bt = t0 + bar * 4 * B;
@@ -881,20 +916,28 @@ body.on-vacation .done-banner { display: block; }
     });
     return t0 + CHORDS.length * 4 * B;
   }
+  function startSynth() {
+    const c = Audio_.ctx;
+    let next = scheduleSong(c.currentTime + .25);
+    const loop = () => { if (!Audio_.playing) return; if (next - c.currentTime < 4) next = scheduleSong(next); Audio_.loopTimer = setTimeout(loop, 1000); };
+    loop();
+  }
   function startMusic() {
     const c = ctx(); if (!c) return false;
     stopMusic();
     Audio_.playing = true;
-    if (Audio_.fileUrl) {
-      Audio_.file = new Audio(Audio_.fileUrl); Audio_.file.loop = true; Audio_.file.volume = 1;
-      Audio_.file.play().catch(() => { Audio_.playing = false; showPlayButton(true); });
-    } else {
-      let next = scheduleSong(c.currentTime + .25);
-      const loop = () => { if (!Audio_.playing) return; if (next - c.currentTime < 4) next = scheduleSong(next); Audio_.loopTimer = setTimeout(loop, 1000); };
-      loop();
-    }
+    // música: a escolhida pelo usuário ou a padrão do site; o hino sintetizado é o plano B
+    const isCustom = !!Audio_.fileUrl;
+    const el = new Audio(isCustom ? Audio_.fileUrl : DEFAULT_SONG);
+    el.loop = true; el.preload = "auto";
+    try { const src = c.createMediaElementSource(el); src.connect(Audio_.an); Audio_.fileSrc = src; } catch (e) {}
+    Audio_.file = el;
+    let fellBack = false;
+    const fallback = () => { if (fellBack || !Audio_.playing || Audio_.file !== el) return; fellBack = true; el.pause(); Audio_.file = null; startSynth(); };
+    el.addEventListener("error", fallback);
+    el.play().catch(err => { if (err && err.name === "NotAllowedError") { Audio_.playing = false; showPlayButton(true); } else fallback(); });
     const t = c.currentTime + .1;
-    airhorn(t); airhorn(t + 1.1, .5); airhorn(t + 1.7, 1.2); cheer(t, 7);
+    airhorn(t, .5); airhorn(t + .6, 1); cheer(t, 4);
     return true;
   }
   function stopMusic() {
@@ -902,6 +945,54 @@ body.on-vacation .done-banner { display: block; }
     clearTimeout(Audio_.loopTimer);
     if (Audio_.music) { try { Audio_.music.gain.setTargetAtTime(0, Audio_.ctx.currentTime, .05); } catch (e) {} setTimeout(((m) => () => m.disconnect())(Audio_.music), 400); Audio_.music = null; }
     if (Audio_.file) { Audio_.file.pause(); Audio_.file = null; }
+    if (Audio_.fileSrc) { try { Audio_.fileSrc.disconnect(); } catch (e) {} Audio_.fileSrc = null; }
+  }
+
+  // ---- detector de batidas (fluxo de graves, ~47–280 Hz) ----
+  const Beat = { data: null, prev: null, hist: [], last: 0, count: 0, raf: 0, kick: 0 };
+  const eqEl = $("eq"), EQ_BARS = 28;
+  eqEl.innerHTML = "<span></span>".repeat(EQ_BARS);
+  const eqSpans = [...eqEl.children];
+  function beatLoop() {
+    if (!partyOn) return;
+    Beat.raf = requestAnimationFrame(beatLoop);
+    const an = Audio_.an;
+    if (!an || !Audio_.playing) { Beat.kick *= .9; party.style.setProperty("--kick", Beat.kick.toFixed(3)); return; }
+    if (!Beat.data) Beat.data = new Uint8Array(an.frequencyBinCount);
+    an.getByteFrequencyData(Beat.data);
+    const d = Beat.data, bass = d.slice(1, 7);
+    let flux = 0;
+    if (Beat.prev) for (let i = 0; i < bass.length; i++) flux += Math.max(0, bass[i] - Beat.prev[i]);
+    Beat.prev = bass;
+    const avg = Beat.hist.length ? Beat.hist.reduce((a, b) => a + b, 0) / Beat.hist.length : 0;
+    Beat.hist.push(flux); if (Beat.hist.length > 45) Beat.hist.shift();
+    const now = performance.now();
+    if (flux > avg * 2 + 12 && now - Beat.last > 360) { Beat.last = now; onBeat(flux > avg * 3.2 + 30); }
+    // nível contínuo dos graves -> pulso suave
+    const level = bass.reduce((a, b) => a + b, 0) / bass.length / 255;
+    Beat.kick = Math.max(Beat.kick * .86, Math.pow(level, 3));
+    party.style.setProperty("--kick", Beat.kick.toFixed(3));
+    // equalizador (escala logarítmica das frequências)
+    for (let i = 0; i < EQ_BARS; i++) {
+      const bin = Math.min(d.length - 1, Math.floor(Math.pow(d.length / 2, i / EQ_BARS)));
+      eqSpans[i].style.transform = `scaleY(${Math.max(.02, d[bin] / 255).toFixed(3)})`;
+    }
+  }
+  const FLASHES = ["rgba(255,191,77,.45)", "rgba(95,212,232,.4)", "rgba(255,95,162,.4)", "rgba(111,224,160,.4)", "rgba(185,139,255,.4)"];
+  function onBeat(strong) {
+    Beat.count++;
+    $("beat-count").innerHTML = `Batidas: <b>${Beat.count}</b>`;
+    if (reduce) return;
+    party.style.setProperty("--flash", FLASHES[Beat.count % FLASHES.length]);
+    const cls = strong ? "drop" : "beat";
+    party.classList.remove("beat", "drop"); void party.offsetWidth; party.classList.add(cls);
+    const tw = $("trophy-wrap"); tw.classList.remove("jump"); void tw.offsetWidth; tw.classList.add("jump");
+    // fogos no ritmo: 1 por batida, 3 nas batidas fortes, silenciosos para não abafar a música
+    const W = fw.width;
+    launch(W * (.1 + ((Beat.count * .37) % 1) * .8), true);
+    if (strong) { launch(W * .2, true); launch(W * .8, true); }
+    if (Beat.count % 4 === 0) { ti = (ti + 1) % CHEERS.length; ticker.textContent = "> " + CHEERS[ti]; }
+    if (Beat.count % 8 === 0 || strong) confetti();
   }
 
   // ---- fogos de artifício ----
@@ -909,10 +1000,10 @@ body.on-vacation .done-banner { display: block; }
   let rockets = [], sparks = [], fwRunning = false, autoFire = null;
   const FW_COLORS = ["#ffbf4d", "#ff7a5c", "#ff5fa2", "#b98bff", "#5fd4e8", "#6fe0a0", "#ffffff"];
   function sizeFw() { fw.width = innerWidth * devicePixelRatio; fw.height = innerHeight * devicePixelRatio; }
-  function launch(x) {
+  function launch(x, silent) {
     const W = fw.width, H = fw.height;
-    rockets.push({ x: x ?? W * (.15 + Math.random() * .7), y: H, vx: (Math.random() - .5) * 2, vy: -(H / 55) * (.8 + Math.random() * .35), c: FW_COLORS[Math.floor(Math.random() * FW_COLORS.length)] });
-    if (Audio_.ctx && Audio_.ctx.state === "running") whistle(Audio_.ctx.currentTime);
+    rockets.push({ silent, x: x ?? W * (.15 + Math.random() * .7), y: H, vx: (Math.random() - .5) * 2, vy: -(H / 55) * (.8 + Math.random() * .35), c: FW_COLORS[Math.floor(Math.random() * FW_COLORS.length)] });
+    if (!silent && Audio_.ctx && Audio_.ctx.state === "running") whistle(Audio_.ctx.currentTime);
   }
   function explode(r) {
     const n = 70 + Math.floor(Math.random() * 50), sp = 2 + Math.random() * 4, dpr = devicePixelRatio;
@@ -921,7 +1012,7 @@ body.on-vacation .done-banner { display: block; }
       const a = (i / n) * Math.PI * 2, s = ring ? sp : sp * Math.random();
       sparks.push({ x: r.x, y: r.y, vx: Math.cos(a) * s * dpr * 1.6, vy: Math.sin(a) * s * dpr * 1.6, life: 1, c: i % 3 ? r.c : c2 });
     }
-    if (Audio_.ctx && Audio_.ctx.state === "running") boom(Audio_.ctx.currentTime);
+    if (!r.silent && Audio_.ctx && Audio_.ctx.state === "running") boom(Audio_.ctx.currentTime);
   }
   function drawFw() {
     fctx.globalCompositeOperation = "destination-out";
@@ -940,7 +1031,7 @@ body.on-vacation .done-banner { display: block; }
   // ---- controle da festa ----
   const party = $("party"), ticker = $("party-ticker");
   const CHEERS = ["Missão cumprida!", "Notebook fechado com sucesso", "E-mail corporativo em modo avião", "Mais um ano vencido", "Campeões de 2026", "Rumo à praia, à rede e ao churrasco", "Sem reunião até janeiro", "Status: FÉRIAS"];
-  let tickerTimer = null, partyOn = false;
+  let tickerTimer = null, partyOn = false, ti = 0;
   function showPlayButton(v) { $("btn-play").hidden = !v; }
   function openParty(withSound) {
     partyOn = true;
@@ -949,11 +1040,14 @@ body.on-vacation .done-banner { display: block; }
     fwRunning = true; requestAnimationFrame(drawFw);
     clearInterval(autoFire);
     for (let i = 0; i < 5; i++) setTimeout(() => launch(), i * 220);
-    autoFire = setInterval(() => { const k = 1 + Math.floor(Math.random() * 3); for (let i = 0; i < k; i++) setTimeout(() => launch(), i * 180); }, 900);
-    confetti(); setTimeout(confetti, 1200); setTimeout(confetti, 2600);
+    // fogos de fundo mais espaçados: os do ritmo vêm das batidas da música
+    autoFire = setInterval(() => launch(undefined, Audio_.playing), 2400);
+    confetti(); setTimeout(confetti, 1200);
     document.body.classList.remove("shake"); void document.body.offsetWidth; document.body.classList.add("shake");
-    let ti = 0; ticker.textContent = "> " + CHEERS[0];
-    clearInterval(tickerTimer); tickerTimer = setInterval(() => { ti = (ti + 1) % CHEERS.length; ticker.textContent = "> " + CHEERS[ti]; }, 1800);
+    ti = 0; ticker.textContent = "> " + CHEERS[0];
+    clearInterval(tickerTimer); tickerTimer = setInterval(() => { if (Audio_.playing) return; ti = (ti + 1) % CHEERS.length; ticker.textContent = "> " + CHEERS[ti]; }, 1800);
+    Beat.count = 0; Beat.hist = []; Beat.prev = null; $("beat-count").innerHTML = "Batidas: <b>0</b>";
+    cancelAnimationFrame(Beat.raf); Beat.raf = requestAnimationFrame(beatLoop);
     const playing = withSound && startMusic();
     showPlayButton(!playing || (Audio_.ctx && Audio_.ctx.state !== "running"));
     $("btn-close").focus();
@@ -961,6 +1055,7 @@ body.on-vacation .done-banner { display: block; }
   function closeParty() {
     partyOn = false;
     party.hidden = true; fwRunning = false; clearInterval(autoFire); clearInterval(tickerTimer); stopMusic();
+    cancelAnimationFrame(Beat.raf); party.style.setProperty("--kick", "0"); party.classList.remove("beat", "drop");
     document.body.classList.remove("shake");
   }
   $("btn-play").addEventListener("click", () => { if (startMusic()) showPlayButton(false); });
@@ -978,16 +1073,42 @@ body.on-vacation .done-banner { display: block; }
     $("armed").textContent = "Som ativado. Deixe esta aba aberta: às 17:00:00 de 16/12 a festa começa sozinha.";
     $("armed").classList.add("on");
     $("btn-arm").textContent = "Som ativado";
+    setTimeout(songLine, 200);
     try { navigator.wakeLock?.request("screen").then(l => { Audio_.lock = l; }).catch(() => {}); } catch (e) {}
   }
   $("btn-arm").addEventListener("click", () => { armSound(); if (Audio_.ctx) airhorn(Audio_.ctx.currentTime, .4); });
-  $("music-file").addEventListener("change", e => {
-    const f = e.target.files && e.target.files[0]; if (!f) return;
+  // música escolhida pelo usuário: fica salva neste navegador (IndexedDB) e substitui a padrão
+  const IDB = {
+    open() { return new Promise((res, rej) => { const r = indexedDB.open("contador-ferias", 1); r.onupgradeneeded = () => r.result.createObjectStore("kv"); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); },
+    async set(k, v) { const db = await this.open(); return new Promise((res, rej) => { const tx = db.transaction("kv", "readwrite"); v === undefined ? tx.objectStore("kv").delete(k) : tx.objectStore("kv").put(v, k); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); },
+    async get(k) { const db = await this.open(); return new Promise((res, rej) => { const r = db.transaction("kv").objectStore("kv").get(k); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); },
+  };
+  function useCustomSong(blob, name) {
     if (Audio_.fileUrl) URL.revokeObjectURL(Audio_.fileUrl);
-    Audio_.fileUrl = URL.createObjectURL(f);
-    armSound();
-    $("armed").textContent = `Música escolhida: ${f.name}. Ela toca na comemoração enquanto esta aba ficar aberta.`;
+    Audio_.fileUrl = blob ? URL.createObjectURL(blob) : null;
+    Audio_.fileName = blob ? name : null;
+    $("btn-music-reset").hidden = !blob;
+    songLine();
+  }
+  function songLine() {
+    const armed = !!(Audio_.ctx && Audio_.ctx.state === "running");
+    const song = Audio_.fileName ? `Música: ${Audio_.fileName} (salva neste navegador).` : "Música: Astronomia, do meme do caixão.";
+    $("armed").textContent = armed
+      ? `Som ativado. ${song} Deixe esta aba aberta: às 17:00:00 de 16/12 a festa começa sozinha.`
+      : `${song} Som desativado: sem um clique antes, a festa acontece sem áudio.`;
+  }
+  $("music-file").addEventListener("change", async e => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    useCustomSong(f, f.name);
+    armSound(); songLine();
+    try { await IDB.set("musica", { name: f.name, blob: f }); } catch (err) {}
   });
+  $("btn-music-reset").addEventListener("click", async () => {
+    useCustomSong(null);
+    try { await IDB.set("musica", undefined); } catch (err) {}
+  });
+  (async () => { try { const m = await IDB.get("musica"); if (m && m.blob) useCustomSong(m.blob, m.name); } catch (err) {} })();
+  songLine();
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible" && Audio_.lock) navigator.wakeLock?.request("screen").then(l => { Audio_.lock = l; }).catch(() => {});
   });
