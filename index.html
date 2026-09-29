@@ -141,7 +141,7 @@ h1 .hl { color: var(--amber); display: inline-block; animation: bob 3s ease-in-o
 }
 .plane.tried .plane-btn::after { animation: none; }
 .plane.nudge .plane-body { animation: nudge .95s cubic-bezier(.3,.6,.3,1); }
-.plane.dizzy .plane-body { animation: loop 1.2s cubic-bezier(.5,0,.5,1); }
+.plane.dizzy .plane-body { animation: loop 1.2s cubic-bezier(.5,0,.5,1) infinite; }
 .plane .speed { position: absolute; right: 70%; top: 50%; width: 0; height: 2px; transform: translateY(-50%); pointer-events: none;
   background: repeating-linear-gradient(90deg, var(--sky) 0 8px, transparent 8px 13px); opacity: 0; }
 .plane.nudge .speed { animation: speed .95s ease-out; }
@@ -994,7 +994,7 @@ body.on-vacation .done-banner { display: block; }
     () => ["Vai pegar um café. Quando voltar, já andei um pouquinho.", `Previsão: ${fmt(left() * 3)} cafés até lá.`],
     () => ["Paciência também conta como dia útil.", "Pergunta pro RH."],
     () => ["O RH está vendo você clicar.", "Disfarça e volta pra planilha."],
-    () => ["Tá bom, tá bom. Uma pirueta pra você se distrair!", "Mas continuo no mesmo lugar."],
+    () => ["Weeeeeeee!", "Tá bom, piruetas pra você se distrair. Mas continuo no mesmo lugar."],
     () => ["Combustível de férias: carregando…", `${fmt(Math.floor(Math.max(0, VACATION - new Date()) / 36e5))} horas pra encher o tanque.`],
     () => ["Eu também quero chegar, viu?", "Mas o calendário manda aqui."],
     () => ["Última dica do comandante:", "aperte os cintos e segure a ansiedade."],
@@ -1022,7 +1022,7 @@ body.on-vacation .done-banner { display: block; }
       setTimeout(() => p.remove(), 1500);
     }
   }
-  function say([line, sub]) {
+  function say([line, sub], ms = 3600) {
     bubble.innerHTML = `${line}<small>${sub}</small>`;
     bubble.hidden = false;
     bubble.classList.remove("show", "hide"); void bubble.offsetWidth; bubble.classList.add("show");
@@ -1032,7 +1032,31 @@ body.on-vacation .done-banner { display: block; }
     bubble.style.left = bx + "px";
     bubble.style.setProperty("--tail", Math.min(Math.max(px - bx, 18), bw - 18) + "px");
     clearTimeout(bubbleTimer);
-    bubbleTimer = setTimeout(() => { bubble.classList.add("hide"); setTimeout(() => { bubble.hidden = true; }, 260); }, 3600);
+    bubbleTimer = setTimeout(() => { bubble.classList.add("hide"); setTimeout(() => { bubble.hidden = true; }, 260); }, ms);
+  }
+
+  // som fixo da pirueta: toca sempre, independente do "Ativar som da festa"
+  const weee = new Audio("sons/weeeee.mp3");
+  weee.preload = "auto"; weee.volume = .8;
+  function spin() {
+    const body = plane.querySelector(".plane-body");
+    let finished = false;
+    const stop = () => {
+      if (finished) return; finished = true;
+      // termina a volta em andamento antes de pousar
+      const land = () => { plane.classList.remove("dizzy"); busy = false; body.removeEventListener("animationiteration", land); };
+      body.addEventListener("animationiteration", land);
+      setTimeout(land, 1300);
+    };
+    plane.classList.remove("nudge", "dizzy"); void plane.offsetWidth; plane.classList.add("dizzy");
+    weee.pause(); weee.currentTime = 0;
+    const p = weee.play();
+    weee.onended = stop;
+    if (p && p.catch) p.catch(stop);                       // sem áudio: só uma volta
+    setTimeout(stop, Math.max(1200, (weee.duration || 9.8) * 1000 + 200)); // garantia
+    const secs = isFinite(weee.duration) ? weee.duration : 9.8;
+    say(CALM[8](), secs * 1000);
+    pushLine("Avião em <em>piruetas</em> para distrair o passageiro ansioso. Weeeee!");
   }
   function hurry() {
     if (busy) return;
@@ -1040,9 +1064,10 @@ body.on-vacation .done-banner { display: block; }
     const idx = pushes < CALM.length ? pushes : Math.floor(Math.random() * CALM.length);
     pushes++;
     plane.classList.add("tried");
+    if (idx === 8) { spin(); return; }
     const room = track.clientWidth - plane.offsetLeft;
     plane.style.setProperty("--push", Math.max(24, Math.min(110, room - 20)) + "px");
-    const cls = idx === 8 ? "dizzy" : "nudge";
+    const cls = "nudge";
     plane.classList.remove("nudge", "dizzy"); void plane.offsetWidth; plane.classList.add(cls);
     if (cls === "nudge") puffs();
     ctx(); boing();
