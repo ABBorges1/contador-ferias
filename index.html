@@ -1,0 +1,930 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Contagem regressiva para as férias: 16/12/2026 às 17:00, em dias corridos e dias úteis (feriados de Franca-SP).">
+<title>Embarque para as Férias</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<style>
+/* Layout: painel de partidas de aeroporto — um "voo" para as férias, com placas split-flap, trilha de voo e calendário de pista */
+:root {
+  --bg: #07141f;
+  --panel: #0e2233;
+  --panel-2: #132c42;
+  --line: #21405a;
+  --fg: #e6f1f8;
+  --muted: #8aa6bb;
+  --amber: #ffbf4d;
+  --sky: #5fd4e8;
+  --coral: #ff7a5c;
+  --green: #6fe0a0;
+  --flap: #0a1a28;
+  --font-display: "Chakra Petch", "Rajdhani", system-ui, sans-serif;
+  --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--bg); color: var(--fg); }
+body {
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  padding-inline: 16px;
+  padding-block: 24px 48px;
+  overflow-x: hidden;
+  background:
+    radial-gradient(1200px 500px at 85% -10%, rgba(95,212,232,.12), transparent 60%),
+    radial-gradient(900px 400px at -10% 110%, rgba(255,122,92,.10), transparent 60%),
+    var(--bg);
+  min-height: 100%;
+}
+#stars { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; opacity: .7; }
+.wrap { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; display: grid; gap: 20px; }
+
+/* ---------- topo / painel de partidas ---------- */
+.board-head {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+  font-family: var(--font-display); text-transform: uppercase; letter-spacing: .12em;
+}
+.board-head .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--amber); font-size: 14px; }
+.board-head .brand svg { width: 22px; height: 22px; }
+.clock { font-family: var(--font-mono); color: var(--muted); font-size: 13px; letter-spacing: .05em; font-variant-numeric: tabular-nums; }
+.clock b { color: var(--fg); font-weight: 600; }
+
+h1 {
+  font-family: var(--font-display); font-weight: 700; margin: 0;
+  font-size: clamp(34px, 7vw, 72px); line-height: .95; letter-spacing: -.01em; text-wrap: balance;
+}
+h1 .hl { color: var(--amber); display: inline-block; animation: bob 3s ease-in-out infinite; }
+.lede { color: var(--muted); max-width: 62ch; margin: 10px 0 0; }
+
+.departures {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto;
+}
+.departures table { width: 100%; border-collapse: collapse; min-width: 560px; font-family: var(--font-mono); font-size: 13px; }
+.departures th { text-align: left; color: var(--muted); font-weight: 400; text-transform: uppercase; letter-spacing: .1em; font-size: 11px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.departures td { padding: 12px 14px; color: var(--amber); font-weight: 600; letter-spacing: .06em; white-space: nowrap; }
+.departures td.dest { color: var(--fg); }
+.status { display: inline-flex; align-items: center; gap: 8px; color: var(--green); }
+.status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; box-shadow: 0 0 10px currentColor; animation: blink 1.2s steps(2, start) infinite; }
+
+/* ---------- contadores ---------- */
+.counters { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 20px; }
+.card {
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--line); border-radius: 14px; padding: 22px; min-width: 0;
+  position: relative; overflow: hidden;
+}
+.card::after { /* linha de scanner */
+  content: ""; position: absolute; left: 0; right: 0; height: 60px; top: -60px;
+  background: linear-gradient(180deg, transparent, rgba(95,212,232,.07), transparent);
+  animation: scan 5s linear infinite; pointer-events: none;
+}
+.eyebrow { font-family: var(--font-display); text-transform: uppercase; letter-spacing: .16em; font-size: 12px; color: var(--sky); font-weight: 600; margin: 0; }
+.card h2 { font-family: var(--font-display); font-size: 22px; margin: 4px 0 18px; font-weight: 600; }
+.card.util .eyebrow { color: var(--coral); }
+
+.flaps { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; }
+.unit { display: grid; gap: 6px; justify-items: center; }
+.unit .digits { display: flex; gap: 4px; }
+.unit label { font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.flap {
+  position: relative; display: grid; place-items: center;
+  width: 1.1em; height: 1.45em; font-size: 34px;
+  background: var(--flap); border-radius: 6px; border: 1px solid #1c3850;
+  font-family: var(--font-mono); font-weight: 700; color: var(--amber);
+  font-variant-numeric: tabular-nums; box-shadow: inset 0 -10px 16px rgba(0,0,0,.35);
+  perspective: 300px;
+}
+.flap::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgba(0,0,0,.6); }
+.flap.big { font-size: clamp(46px, 10vw, 72px); }
+.flap.sky { color: var(--sky); }
+.flap.coral { color: var(--coral); }
+.flap.flip { animation: flip .45s cubic-bezier(.3,.7,.4,1); }
+.sep { font-family: var(--font-mono); font-size: 30px; color: var(--muted); padding-bottom: 26px; animation: blink 1s steps(2, start) infinite; }
+
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-top: 20px; }
+.fact { border-top: 1px dashed var(--line); padding-top: 10px; min-width: 0; }
+.fact b { display: block; font-family: var(--font-mono); font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.fact span { font-size: 12px; color: var(--muted); }
+
+/* ---------- trilha de voo ---------- */
+.flight { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px 22px; }
+.flight-top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.flight-top strong { color: var(--fg); font-size: 20px; font-family: var(--font-display); letter-spacing: 0; }
+.track { position: relative; height: 56px; margin-top: 12px; }
+.track .rail { position: absolute; left: 0; right: 0; top: 50%; border-top: 2px dashed var(--line); }
+.track .done { position: absolute; left: 0; top: calc(50% - 1px); height: 3px; background: linear-gradient(90deg, var(--sky), var(--amber)); border-radius: 2px; width: 0; transition: width 1.6s cubic-bezier(.2,.8,.2,1); }
+.track .plane { position: absolute; top: 50%; left: 0; transform: translate(-50%, -50%); transition: left 1.6s cubic-bezier(.2,.8,.2,1); color: var(--amber); filter: drop-shadow(0 0 8px rgba(255,191,77,.6)); }
+.track .plane svg { width: 34px; height: 34px; display: block; animation: wobble 2.4s ease-in-out infinite; }
+.track .pin { position: absolute; top: 50%; width: 12px; height: 12px; border-radius: 50%; transform: translate(-50%, -50%); border: 2px solid var(--muted); background: var(--bg); }
+.track .pin.end { right: -6px; left: auto; transform: translate(0, -50%); border-color: var(--coral); background: var(--coral); box-shadow: 0 0 12px var(--coral); }
+.track-labels { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+
+/* ---------- calendário ---------- */
+.section-title { font-family: var(--font-display); font-size: 20px; margin: 0; font-weight: 600; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--muted); margin: 6px 0 14px; }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 6px; }
+.months { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 14px; }
+.month { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; min-width: 0; }
+.month h3 { margin: 0 0 8px; font-family: var(--font-display); font-size: 15px; text-transform: uppercase; letter-spacing: .1em; display: flex; justify-content: space-between; }
+.month h3 small { font-family: var(--font-mono); font-size: 11px; color: var(--muted); letter-spacing: .04em; text-transform: none; }
+.grid7 { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; font-family: var(--font-mono); font-size: 12px; text-align: center; }
+.grid7 .dow { color: var(--muted); font-size: 10px; padding-bottom: 2px; }
+.day { aspect-ratio: 1; display: grid; place-items: center; border-radius: 5px; max-width: 100%; position: relative; cursor: default; }
+.day.past { color: #3c566b; }
+.day.work { background: rgba(95,212,232,.14); color: var(--fg); }
+.day.weekend { color: var(--muted); }
+.day.holiday { background: rgba(255,122,92,.22); color: var(--coral); font-weight: 700; }
+.day.today { outline: 2px solid var(--amber); outline-offset: -2px; color: var(--amber); font-weight: 700; }
+.day.last { background: var(--amber); color: #1a1200; font-weight: 700; }
+.day.vac { background: repeating-linear-gradient(135deg, rgba(111,224,160,.25) 0 4px, rgba(111,224,160,.1) 4px 8px); color: var(--green); }
+
+/* ---------- feriados ---------- */
+.lower { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 20px; }
+.hol-list { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 8px; }
+.hol-list li { display: grid; grid-template-columns: 58px 1fr auto; gap: 12px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.hol-list .d { font-family: var(--font-mono); font-weight: 700; color: var(--coral); text-align: center; line-height: 1.1; }
+.hol-list .d small { display: block; font-size: 10px; color: var(--muted); font-weight: 400; text-transform: uppercase; }
+.hol-list .n { min-width: 0; }
+.hol-list .n b { display: block; font-weight: 700; }
+.hol-list .n span { font-size: 12px; color: var(--muted); }
+.tag { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; padding: 3px 7px; border-radius: 99px; border: 1px solid currentColor; white-space: nowrap; }
+.tag.nac { color: var(--sky); } .tag.est { color: var(--green); } .tag.mun { color: var(--amber); }
+.hol-list li.off { opacity: .55; }
+.hol-list li.off .d { color: var(--muted); }
+
+.terminal { background: var(--flap); border: 1px solid var(--line); border-radius: 12px; padding: 16px; font-family: var(--font-mono); font-size: 13px; min-height: 180px; margin-top: 12px; }
+.terminal .ln { color: var(--muted); }
+.terminal .ln b { color: var(--green); font-weight: 600; }
+.terminal .ln em { font-style: normal; color: var(--amber); }
+.cursor { display: inline-block; width: 8px; height: 15px; background: var(--green); vertical-align: -2px; animation: blink 1s steps(2, start) infinite; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+button {
+  font-family: var(--font-display); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; font-size: 13px;
+  background: transparent; color: var(--amber); border: 1px solid var(--amber); border-radius: 8px; padding: 10px 16px; cursor: pointer;
+  transition: background .2s, color .2s, transform .1s;
+}
+button:hover { background: var(--amber); color: #1a1200; }
+button:active { transform: translateY(1px); }
+button:focus-visible { outline: 2px solid var(--sky); outline-offset: 3px; }
+
+.note { font-size: 12px; color: var(--muted); max-width: 80ch; margin: 0; }
+#confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 30; }
+
+/* ---------- preparar a festa ---------- */
+.party-prep { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px 22px; display: grid; gap: 10px; }
+.party-prep p { margin: 0; color: var(--muted); max-width: 70ch; }
+.armed { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+.armed.on { color: var(--green); }
+.file-btn { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-display); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; font-size: 13px; color: var(--sky); border: 1px solid var(--sky); border-radius: 8px; padding: 10px 16px; cursor: pointer; }
+.file-btn:hover { background: var(--sky); color: #04161f; }
+.file-btn:focus-within { outline: 2px solid var(--amber); outline-offset: 3px; }
+.file-btn input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+button.primary { background: var(--amber); color: #1a1200; }
+button.primary:hover { background: #ffd27f; }
+
+/* ---------- celebração ---------- */
+#party {
+  position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; text-align: center;
+  background: radial-gradient(ellipse at center, rgba(20,8,40,.82), rgba(3,6,14,.95));
+  padding-inline: 16px; padding-block: calc(env(safe-area-inset-top, 0px) + 16px) calc(env(safe-area-inset-bottom, 0px) + 16px);
+  overflow: hidden;
+}
+#fireworks { position: absolute; inset: 0; width: 100%; height: 100%; }
+.party-inner { position: relative; z-index: 2; display: grid; gap: 14px; justify-items: center; max-width: 900px; }
+.trophy { width: clamp(80px, 16vw, 140px); color: var(--amber); filter: drop-shadow(0 0 24px rgba(255,191,77,.8)); animation: trophy 1s ease-in-out infinite; }
+.party-title {
+  font-family: var(--font-display); font-weight: 700; margin: 0; line-height: .9;
+  font-size: clamp(64px, 18vw, 190px); letter-spacing: -.02em;
+  background: linear-gradient(90deg, #ffbf4d, #ff7a5c, #ff5fa2, #b98bff, #5fd4e8, #6fe0a0, #ffbf4d);
+  background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: rainbow 2.5s linear infinite, pump .5s ease-in-out infinite alternate;
+}
+.party-sub { font-family: var(--font-display); font-size: clamp(18px, 4vw, 30px); color: var(--fg); margin: 0; font-weight: 600; text-wrap: balance; }
+.party-sub em { font-style: normal; color: var(--amber); }
+.party-ticker { font-family: var(--font-mono); color: var(--green); font-size: 14px; min-height: 1.5em; }
+.party-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 6px; }
+body.shake .wrap { animation: shake .45s ease-in-out 6; }
+
+@keyframes rainbow { to { background-position: 300% 0; } }
+@keyframes pump { from { transform: scale(1); } to { transform: scale(1.06) rotate(-1deg); } }
+@keyframes trophy { 0%,100% { transform: translateY(0) rotate(-6deg); } 50% { transform: translateY(-14px) rotate(6deg); } }
+@keyframes shake { 0%,100% { transform: translate(0,0); } 25% { transform: translate(-6px, 3px); } 50% { transform: translate(5px,-4px); } 75% { transform: translate(-3px,-2px); } }
+
+.done-banner { display: none; }
+body.on-vacation .done-banner { display: block; }
+
+@keyframes flip { 0% { transform: rotateX(90deg); filter: brightness(1.8); } 100% { transform: rotateX(0); filter: none; } }
+@keyframes blink { to { visibility: hidden; } }
+@keyframes bob { 0%,100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-6px) rotate(2deg); } }
+@keyframes wobble { 0%,100% { transform: rotate(90deg) translateX(0); } 50% { transform: rotate(90deg) translateX(-3px); } }
+@keyframes scan { to { top: 110%; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (max-width: 480px) {
+  .flap { font-size: 26px; }
+  .card { padding: 18px; }
+  .sep { font-size: 22px; padding-bottom: 22px; }
+}
+</style>
+</head>
+<body>
+<canvas id="stars" aria-hidden="true"></canvas>
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<main class="wrap">
+  <div class="board-head">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
+      Terminal Franca · Partidas
+    </div>
+    <div class="clock" id="clock">—</div>
+  </div>
+
+  <header>
+    <h1>Próxima parada: <span class="hl">Férias</span></h1>
+    <p class="lede">As férias começam em <b>16/12/2026 às 17:00</b>, no fim do último expediente. Os dias úteis descontam fins de semana e feriados nacionais, do estado de São Paulo e de Franca-SP.</p>
+  </header>
+
+  <div class="departures" role="region" aria-label="Painel de partidas">
+    <table>
+      <thead><tr><th>Voo</th><th>Destino</th><th>Embarque</th><th>Portão</th><th>Status</th></tr></thead>
+      <tbody><tr>
+        <td>FER-2026</td>
+        <td class="dest">FÉRIAS · praia, rede e nada de reunião</td>
+        <td>16 DEZ 17:00</td>
+        <td>Nº 16</td>
+        <td><span class="status" id="status">No horário</span></td>
+      </tr></tbody>
+    </table>
+  </div>
+
+  <div class="done-banner card">
+    <p class="eyebrow">Pouso confirmado</p>
+    <h2>Você está de férias. Feche o notebook.</h2>
+    <div class="actions"><button type="button" class="primary" data-party="replay">Comemorar de novo</button></div>
+  </div>
+
+  <section class="counters">
+    <article class="card">
+      <p class="eyebrow">Contador 01 · Dias corridos</p>
+      <h2>Tempo até a decolagem</h2>
+      <div class="flaps" id="cal-flaps" aria-live="off"></div>
+      <div class="facts">
+        <div class="fact"><b id="f-weeks">—</b><span>semanas</span></div>
+        <div class="fact"><b id="f-weekends">—</b><span>fins de semana</span></div>
+        <div class="fact"><b id="f-hours">—</b><span>horas totais</span></div>
+      </div>
+    </article>
+
+    <article class="card util">
+      <p class="eyebrow">Contador 02 · Dias úteis</p>
+      <h2>Expedientes até a liberdade</h2>
+      <div class="flaps">
+        <div class="unit"><div class="digits" id="util-digits"></div><label>dias úteis restantes</label></div>
+      </div>
+      <div class="facts">
+        <div class="fact"><b id="f-mondays">—</b><span>segundas-feiras</span></div>
+        <div class="fact"><b id="f-fridays">—</b><span>sextas-feiras</span></div>
+        <div class="fact"><b id="f-hol">—</b><span>feriados no caminho</span></div>
+        <div class="fact"><b id="f-coffee">—</b><span>cafezinhos (3/dia)</span></div>
+      </div>
+    </article>
+  </section>
+
+  <section class="flight" aria-label="Progresso do ano de trabalho">
+    <div class="flight-top">
+      <span>Decolagem · 02 jan 2026</span>
+      <strong id="pct">—</strong>
+      <span>Pouso · 16 dez 17:00</span>
+    </div>
+    <div class="track">
+      <div class="rail"></div>
+      <div class="done" id="done"></div>
+      <span class="pin" style="left:0"></span>
+      <span class="pin end"></span>
+      <div class="plane" id="plane"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg></div>
+    </div>
+    <div class="track-labels"><span id="lbl-done">—</span><span id="lbl-left">—</span></div>
+  </section>
+
+  <section class="party-prep" aria-label="Preparar a comemoração">
+    <p class="eyebrow">Festa programada · 16/12 às 17:00:00</p>
+    <h2 class="section-title">Preparar a comemoração</h2>
+    <p>Na hora exata a tela explode em fogos, confete, buzina, torcida e um hino de vitória. O navegador só libera som depois de um clique, então ative o som antes e deixe esta aba aberta no dia 16/12.</p>
+    <div class="actions">
+      <button type="button" class="primary" id="btn-arm">Ativar som da festa</button>
+      <button type="button" data-party="test">Testar comemoração</button>
+      <label class="file-btn">Usar minha música (MP3)<input type="file" id="music-file" accept="audio/*"></label>
+    </div>
+    <div class="armed" id="armed">Som desativado. Sem clique, a festa acontece sem áudio.</div>
+  </section>
+
+  <section>
+    <h2 class="section-title">Mapa de voo, dia a dia</h2>
+    <div class="legend">
+      <span><i style="background:rgba(95,212,232,.3)"></i>Dia útil</span>
+      <span><i style="background:rgba(255,122,92,.4)"></i>Feriado</span>
+      <span><i style="border:2px solid var(--amber)"></i>Hoje</span>
+      <span><i style="background:var(--amber)"></i>Último expediente</span>
+      <span><i style="background:rgba(111,224,160,.35)"></i>Férias</span>
+    </div>
+    <div class="months" id="months"></div>
+  </section>
+
+  <section class="lower">
+    <div>
+      <h2 class="section-title">Feriados de 2026 em Franca-SP</h2>
+      <ul class="hol-list" id="hol-list"></ul>
+    </div>
+    <div>
+      <h2 class="section-title">Console da torre</h2>
+      <div class="terminal" id="term" aria-live="polite"></div>
+      <div class="actions">
+        <button id="btn-confetti" type="button">Soltar confete</button>
+        <button id="btn-msg" type="button">Nova mensagem</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="party" hidden role="dialog" aria-modal="true" aria-label="Comemoração das férias">
+    <canvas id="fireworks" aria-hidden="true"></canvas>
+    <div class="party-inner">
+      <svg class="trophy" viewBox="0 0 64 64" fill="currentColor" aria-hidden="true"><path d="M18 6h28v6h10v6c0 7-5 12-11 13-2 6-6 9-10 10v7h8v6H21v-6h8v-7c-4-1-8-4-10-10C13 30 8 25 8 18v-6h10V6zm-4 12c0 3 2 6 5 7-1-2-1-5-1-7h-4zm36 0h-4c0 2 0 5-1 7 3-1 5-4 5-7zM17 54h30v4H17z"/></svg>
+      <h2 class="party-title">FÉRIAS!</h2>
+      <p class="party-sub">Mais um ano vencido. <em>Campeões de 2026!</em></p>
+      <div class="party-ticker" id="party-ticker"></div>
+      <div class="party-actions">
+        <button type="button" class="primary" id="btn-play">Tocar a festa</button>
+        <button type="button" id="btn-more">Mais fogos</button>
+        <button type="button" id="btn-mute">Parar som</button>
+        <button type="button" id="btn-close">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="note">Contagem feita com a data e hora do seu dispositivo. Os dias úteis incluem hoje, se hoje for dia útil e ainda não tiver passado das 17:00, e vão até 16/12/2026. Pontos facultativos (Carnaval, Corpus Christi, Dia do Servidor em 28/10) não foram descontados. Em 2026, 15/11 cai num domingo e 28/11 num sábado, então não mudam a conta.</p>
+</main>
+
+<script>
+(() => {
+  const VACATION = new Date(2026, 11, 16, 17, 0, 0);  // 16/12/2026 17:00:00 local — início das férias
+  const LAST_DAY = new Date(2026, 11, 16);            // 16/12/2026 (último expediente)
+  const END_HOUR = 17;                                // expediente termina às 17:00
+  const YEAR_START = new Date(2026, 0, 2);            // primeiro dia útil de 2026
+
+  const HOLIDAYS = [
+    ["2026-01-01", "Confraternização Universal", "nac"],
+    ["2026-04-03", "Sexta-feira Santa", "nac"],
+    ["2026-04-21", "Tiradentes", "nac"],
+    ["2026-05-01", "Dia do Trabalhador", "nac"],
+    ["2026-07-09", "Revolução Constitucionalista", "est"],
+    ["2026-09-07", "Independência do Brasil", "nac"],
+    ["2026-10-12", "Nossa Senhora Aparecida", "nac"],
+    ["2026-11-02", "Finados", "nac"],
+    ["2026-11-15", "Proclamação da República", "nac"],
+    ["2026-11-20", "Consciência Negra", "nac"],
+    ["2026-11-28", "Aniversário de Franca", "mun"],
+    ["2026-12-08", "Nossa Senhora da Conceição (padroeira)", "mun"],
+    ["2026-12-25", "Natal", "nac"],
+  ];
+  const TAG = { nac: "Nacional", est: "Estadual SP", mun: "Franca" };
+  const holMap = new Map(HOLIDAYS.map(h => [h[0], h]));
+
+  const pad = (n, l = 2) => String(n).padStart(l, "0");
+  const key = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const dayOnly = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const isWeekend = d => d.getDay() === 0 || d.getDay() === 6;
+  const isHoliday = d => holMap.has(key(d));
+  const isWork = d => !isWeekend(d) && !isHoliday(d);
+  const fmt = n => n.toLocaleString("pt-BR");
+  const WD = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
+  const MONTHS = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+
+  // ---- estatísticas de dias úteis (hoje conta até 17:00; depois disso, a partir de amanhã) ----
+  function workStart(now) {
+    const d = dayOnly(now);
+    if (now.getHours() >= END_HOUR) d.setDate(d.getDate() + 1);
+    return d;
+  }
+  function workStats(now) {
+    const s = { work: 0, mondays: 0, fridays: 0, hol: 0, weekends: 0 };
+    for (let d = workStart(now); d <= LAST_DAY; d.setDate(d.getDate() + 1)) {
+      if (d.getDay() === 6) s.weekends++;
+      if (isWeekend(d)) continue;
+      if (isHoliday(d)) { s.hol++; continue; }
+      s.work++;
+      if (d.getDay() === 1) s.mondays++;
+      if (d.getDay() === 5) s.fridays++;
+    }
+    return s;
+  }
+  function countWork(from, to) {
+    let n = 0;
+    for (let d = dayOnly(from); d <= to; d.setDate(d.getDate() + 1)) if (isWork(d)) n++;
+    return n;
+  }
+
+  // ---- placas split-flap ----
+  function makeDigits(container, count, cls) {
+    container.innerHTML = "";
+    const els = [];
+    for (let i = 0; i < count; i++) {
+      const s = document.createElement("span");
+      s.className = "flap " + cls;
+      s.textContent = "0";
+      container.appendChild(s);
+      els.push(s);
+    }
+    return els;
+  }
+  function setDigits(els, value) {
+    const str = String(value).padStart(els.length, "0").slice(-els.length);
+    els.forEach((el, i) => {
+      if (el.textContent !== str[i]) {
+        el.textContent = str[i];
+        el.classList.remove("flip"); void el.offsetWidth; el.classList.add("flip");
+      }
+    });
+  }
+
+  const calWrap = document.getElementById("cal-flaps");
+  const units = [["dias", 3, "big"], ["horas", 2, "sky"], ["min", 2, "sky"], ["seg", 2, "sky"]];
+  const calEls = [];
+  units.forEach(([label, n, cls], i) => {
+    if (i > 0) { const sep = document.createElement("span"); sep.className = "sep"; sep.textContent = i === 1 ? "" : ":"; if (i > 1) calWrap.appendChild(sep); }
+    const u = document.createElement("div"); u.className = "unit";
+    const dg = document.createElement("div"); dg.className = "digits";
+    const lb = document.createElement("label"); lb.textContent = label;
+    u.append(dg, lb); calWrap.appendChild(u);
+    calEls.push(makeDigits(dg, n, cls));
+  });
+  const utilEls = makeDigits(document.getElementById("util-digits"), 3, "big coral");
+
+  // ---- calendário ----
+  function renderMonths(now) {
+    const box = document.getElementById("months");
+    box.innerHTML = "";
+    const today = dayOnly(now);
+    const firstWork = workStart(now);
+    const startM = Math.min(now.getFullYear() === 2026 ? now.getMonth() : 0, 11);
+    for (let m = startM; m <= 11; m++) {
+      const first = new Date(2026, m, 1);
+      const days = new Date(2026, m + 1, 0).getDate();
+      let wk = 0;
+      for (let d = 1; d <= days; d++) { const dt = new Date(2026, m, d); if (dt >= firstWork && dt <= LAST_DAY && isWork(dt)) wk++; }
+      const el = document.createElement("div"); el.className = "month";
+      el.innerHTML = `<h3>${MONTHS[m]} <small>${wk} úteis restantes</small></h3>`;
+      const g = document.createElement("div"); g.className = "grid7";
+      ["D","S","T","Q","Q","S","S"].forEach(x => { const s = document.createElement("span"); s.className = "dow"; s.textContent = x; g.appendChild(s); });
+      for (let i = 0; i < first.getDay(); i++) g.appendChild(document.createElement("span"));
+      for (let d = 1; d <= days; d++) {
+        const dt = new Date(2026, m, d);
+        const c = document.createElement("span"); c.className = "day"; c.textContent = d;
+        const h = holMap.get(key(dt));
+        let title = `${pad(d)}/${pad(m + 1)} (${WD[dt.getDay()]})`;
+        if (dt > LAST_DAY) { c.classList.add("vac"); title += " · férias"; }
+        else if (dt < today) c.classList.add("past");
+        else if (h) { c.classList.add("holiday"); title += " · " + h[1]; }
+        else if (isWeekend(dt)) c.classList.add("weekend");
+        else c.classList.add("work");
+        if (+dt === +LAST_DAY) { c.classList.add("last"); title += " · último expediente, férias às 17:00"; }
+        if (+dt === +today) { c.classList.add("today"); title += " · hoje"; }
+        c.title = title;
+        g.appendChild(c);
+      }
+      el.appendChild(g); box.appendChild(el);
+    }
+  }
+
+  // ---- lista de feriados ----
+  function renderHolidays(now) {
+    const ul = document.getElementById("hol-list");
+    const today = dayOnly(now);
+    ul.innerHTML = "";
+    HOLIDAYS.forEach(([k, name, t]) => {
+      const [y, mo, d] = k.split("-").map(Number);
+      const dt = new Date(y, mo - 1, d);
+      const diff = Math.round((dt - today) / 864e5);
+      const li = document.createElement("li");
+      if (diff < 0) li.className = "off";
+      let info = diff < 0 ? "já passou" : diff === 0 ? "é hoje!" : `em ${diff} dia${diff > 1 ? "s" : ""}`;
+      if (isWeekend(dt)) info += " · cai no fim de semana";
+      if (dt > LAST_DAY) info += " · já nas férias";
+      li.innerHTML = `<div class="d">${pad(d)}/${pad(mo)}<small>${WD[dt.getDay()]}</small></div>
+        <div class="n"><b>${name}</b><span>${info}</span></div>
+        <span class="tag ${t}">${TAG[t]}</span>`;
+      ul.appendChild(li);
+    });
+  }
+
+  // ---- console com mensagens ----
+  const term = document.getElementById("term");
+  let lines = [];
+  function messages(s, days) {
+    return [
+      `Torre para FER-2026: <em>${s.work}</em> expedientes até liberar a pista.`,
+      `Estimativa: <em>${fmt(s.work * 8)}</em> horas de trabalho restantes. Aguente firme.`,
+      `Previsão: <em>${fmt(s.work * 3)}</em> cafezinhos até o embarque.`,
+      `Só mais <em>${s.mondays}</em> segundas-feiras. A pior parte está acabando.`,
+      `<em>${s.fridays}</em> sextas-feiras no caminho. Sextou em série.`,
+      `Radar detectou <em>${s.hol}</em> feriado(s) em dia útil antes do pouso.`,
+      `Faltam <em>${days}</em> noites de sono. Sonhe com a praia.`,
+      `Checklist: protetor solar, chinelo, modo avião no e-mail corporativo.`,
+      `Aviso: resposta automática de férias deve ser ligada em 16/12 antes das 17:00.`,
+      `Festa programada para <em>16/12 às 17:00:00</em>. Fogos já carregados.`,
+      `Sistema estável. Motivação em <em>${Math.max(10, 100 - s.work)}%</em> e subindo.`,
+    ];
+  }
+  let msgIdx = 0;
+  function pushLine(html) {
+    lines.push(`<div class="ln"><b>&gt;</b> ${html}</div>`);
+    if (lines.length > 6) lines.shift();
+    term.innerHTML = lines.join("") + `<span class="cursor"></span>`;
+  }
+
+  // ---- estrelas / confete ----
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const sc = document.getElementById("stars"), sctx = sc.getContext("2d");
+  let stars = [];
+  function sizeStars() {
+    sc.width = innerWidth * devicePixelRatio; sc.height = innerHeight * devicePixelRatio;
+    stars = Array.from({ length: 90 }, () => ({ x: Math.random() * sc.width, y: Math.random() * sc.height, r: Math.random() * 1.4 + .3, v: Math.random() * .25 + .05, p: Math.random() * 6 }));
+  }
+  function drawStars(t) {
+    sctx.clearRect(0, 0, sc.width, sc.height);
+    stars.forEach(s => {
+      s.x -= s.v * devicePixelRatio; if (s.x < 0) s.x = sc.width;
+      sctx.globalAlpha = .35 + .35 * Math.sin(t / 700 + s.p);
+      sctx.fillStyle = "#cfe8f5";
+      sctx.beginPath(); sctx.arc(s.x, s.y, s.r * devicePixelRatio, 0, 7); sctx.fill();
+    });
+    if (!reduce) requestAnimationFrame(drawStars);
+  }
+  sizeStars(); addEventListener("resize", sizeStars); requestAnimationFrame(drawStars);
+
+  const cc = document.getElementById("confetti"), cctx = cc.getContext("2d");
+  let bits = [], running = false;
+  function confetti() {
+    if (reduce) return;
+    cc.width = innerWidth; cc.height = innerHeight;
+    const cols = ["#ffbf4d", "#5fd4e8", "#ff7a5c", "#6fe0a0", "#e6f1f8"];
+    for (let i = 0; i < 160; i++) bits.push({ x: innerWidth / 2 + (Math.random() - .5) * 200, y: innerHeight * .35, vx: (Math.random() - .5) * 14, vy: Math.random() * -14 - 4, r: Math.random() * 6.28, vr: (Math.random() - .5) * .3, w: 6 + Math.random() * 6, h: 4 + Math.random() * 4, c: cols[i % cols.length], life: 0 });
+    if (!running) { running = true; requestAnimationFrame(stepConfetti); }
+  }
+  function stepConfetti() {
+    cctx.clearRect(0, 0, cc.width, cc.height);
+    bits.forEach(b => { b.vy += .35; b.vx *= .99; b.x += b.vx; b.y += b.vy; b.r += b.vr; b.life++;
+      cctx.save(); cctx.translate(b.x, b.y); cctx.rotate(b.r); cctx.fillStyle = b.c; cctx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h); cctx.restore(); });
+    bits = bits.filter(b => b.y < cc.height + 20 && b.life < 400);
+    if (bits.length) requestAnimationFrame(stepConfetti); else { running = false; cctx.clearRect(0, 0, cc.width, cc.height); }
+  }
+
+  const $ = id => document.getElementById(id);
+
+  // =====================================================================
+  //  FESTA: áudio sintetizado (hino original), fogos, torcida e buzina
+  // =====================================================================
+  const Audio_ = { ctx: null, out: null, music: null, loopTimer: null, playing: false, file: null, fileUrl: null, lock: null };
+  function ctx() {
+    if (!Audio_.ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      const c = new AC();
+      const comp = c.createDynamicsCompressor();
+      comp.threshold.value = -14; comp.ratio.value = 6;
+      const master = c.createGain(); master.gain.value = .8;
+      master.connect(comp); comp.connect(c.destination);
+      Audio_.ctx = c; Audio_.out = master;
+    }
+    if (Audio_.ctx.state === "suspended") Audio_.ctx.resume().catch(() => {});
+    return Audio_.ctx;
+  }
+  const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+  let noiseBuf = null;
+  function noise(c) {
+    if (!noiseBuf) {
+      noiseBuf = c.createBuffer(1, c.sampleRate * 2, c.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const s = c.createBufferSource(); s.buffer = noiseBuf; return s;
+  }
+  function env(g, t, a, peak, dur, rel = .08) {
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t + a);
+    g.gain.setValueAtTime(peak, t + Math.max(a, dur - rel));
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  }
+  // metais (acordes)
+  function brass(c, dest, t, midi, dur, vol) {
+    const g = c.createGain(), f = c.createBiquadFilter();
+    f.type = "lowpass"; f.Q.value = 2;
+    f.frequency.setValueAtTime(600, t); f.frequency.linearRampToValueAtTime(3200, t + .06); f.frequency.exponentialRampToValueAtTime(1400, t + dur);
+    [-7, 7].forEach(det => { const o = c.createOscillator(); o.type = "sawtooth"; o.frequency.value = hz(midi); o.detune.value = det; o.connect(f); o.start(t); o.stop(t + dur + .05); });
+    env(g, t, .02, vol, dur);
+    f.connect(g); g.connect(dest);
+  }
+  // melodia principal
+  function lead(c, dest, t, midi, dur, vol) {
+    const g = c.createGain(), f = c.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 4200;
+    const o1 = c.createOscillator(), o2 = c.createOscillator(), lfo = c.createOscillator(), lg = c.createGain();
+    o1.type = "square"; o2.type = "triangle"; o1.frequency.value = hz(midi); o2.frequency.value = hz(midi + 12);
+    lfo.frequency.value = 5.5; lg.gain.value = 6; lfo.connect(lg); lg.connect(o1.detune); lg.connect(o2.detune);
+    [o1, o2, lfo].forEach(o => { o.start(t); o.stop(t + dur + .05); });
+    o1.connect(f); o2.connect(f);
+    env(g, t, .015, vol, dur, .06);
+    f.connect(g); g.connect(dest);
+  }
+  function bass(c, dest, t, midi, dur, vol) {
+    const g = c.createGain(), o = c.createOscillator(), f = c.createBiquadFilter();
+    o.type = "sawtooth"; o.frequency.value = hz(midi); f.type = "lowpass"; f.frequency.value = 500;
+    o.connect(f); f.connect(g); g.connect(dest); env(g, t, .01, vol, dur, .05); o.start(t); o.stop(t + dur + .05);
+  }
+  function kick(c, dest, t, vol = 1) {
+    const o = c.createOscillator(), g = c.createGain();
+    o.frequency.setValueAtTime(160, t); o.frequency.exponentialRampToValueAtTime(40, t + .18);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + .3);
+    o.connect(g); g.connect(dest); o.start(t); o.stop(t + .32);
+  }
+  function snare(c, dest, t, vol = .5) {
+    const n = noise(c), f = c.createBiquadFilter(), g = c.createGain();
+    f.type = "highpass"; f.frequency.value = 1200;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + .18);
+    n.connect(f); f.connect(g); g.connect(dest); n.start(t, Math.random()); n.stop(t + .2);
+    const o = c.createOscillator(), og = c.createGain(); o.type = "triangle"; o.frequency.value = 190;
+    og.gain.setValueAtTime(vol * .6, t); og.gain.exponentialRampToValueAtTime(0.001, t + .1);
+    o.connect(og); og.connect(dest); o.start(t); o.stop(t + .12);
+  }
+  function hat(c, dest, t, vol = .12) {
+    const n = noise(c), f = c.createBiquadFilter(), g = c.createGain();
+    f.type = "highpass"; f.frequency.value = 7500;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + .05);
+    n.connect(f); f.connect(g); g.connect(dest); n.start(t, Math.random()); n.stop(t + .06);
+  }
+  function crash(c, dest, t, vol = .35) {
+    const n = noise(c), f = c.createBiquadFilter(), g = c.createGain();
+    f.type = "highpass"; f.frequency.value = 4000;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + 1.8);
+    n.connect(f); f.connect(g); g.connect(dest); n.start(t, Math.random()); n.stop(t + 1.9);
+  }
+  // efeitos
+  function boom(t) {
+    const c = Audio_.ctx; if (!c) return;
+    const n = noise(c), f = c.createBiquadFilter(), g = c.createGain();
+    f.type = "lowpass"; f.frequency.setValueAtTime(2200, t); f.frequency.exponentialRampToValueAtTime(90, t + 1.2);
+    g.gain.setValueAtTime(.9, t); g.gain.exponentialRampToValueAtTime(0.001, t + 1.4);
+    n.connect(f); f.connect(g); g.connect(Audio_.out); n.start(t, Math.random()); n.stop(t + 1.5);
+    for (let i = 0; i < 10; i++) hat(c, Audio_.out, t + .25 + Math.random() * .8, .08 + Math.random() * .08); // estalinhos
+  }
+  function whistle(t) {
+    const c = Audio_.ctx; if (!c) return;
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = "sine"; o.frequency.setValueAtTime(700, t); o.frequency.exponentialRampToValueAtTime(2400, t + .7);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(.05, t + .1); g.gain.exponentialRampToValueAtTime(0.0001, t + .75);
+    o.connect(g); g.connect(Audio_.out); o.start(t); o.stop(t + .8);
+  }
+  function airhorn(t, dur = .9) {
+    const c = Audio_.ctx; if (!c) return;
+    const g = c.createGain(), f = c.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 1100; f.Q.value = .7;
+    [233, 234.5, 466, 349].forEach(fr => { const o = c.createOscillator(); o.type = "sawtooth"; o.frequency.value = fr; o.connect(f); o.start(t); o.stop(t + dur); });
+    env(g, t, .03, .35, dur, .1); f.connect(g); g.connect(Audio_.out);
+  }
+  function cheer(t, dur = 5) {
+    const c = Audio_.ctx; if (!c) return;
+    const n = noise(c), f = c.createBiquadFilter(), g = c.createGain(), lfo = c.createOscillator(), lg = c.createGain();
+    f.type = "bandpass"; f.frequency.value = 1400; f.Q.value = .6;
+    n.loop = true; lfo.frequency.value = 7; lg.gain.value = .06; lfo.connect(lg); lg.connect(g.gain);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(.22, t + .6); g.gain.setValueAtTime(.22, t + dur - 1.5); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    n.connect(f); f.connect(g); g.connect(Audio_.out); n.start(t); n.stop(t + dur); lfo.start(t); lfo.stop(t + dur);
+  }
+
+  // Hino original "Campeões das Férias" — 128 BPM, 16 compassos
+  const BPM = 128, B = 60 / BPM;
+  const CHORDS = [
+    [48, [60,64,67]], [43, [59,62,67]], [45, [60,64,69]], [41, [60,65,69]],
+    [48, [60,64,67]], [43, [59,62,67]], [45, [60,64,69]], [41, [60,65,69]],
+    [41, [60,65,69]], [43, [62,67,71]], [40, [59,64,67]], [45, [60,64,69]],
+    [41, [60,65,69]], [43, [62,67,71]], [48, [64,67,72]], [48, [64,67,72]],
+  ];
+  const MELODY = [
+    [[0,72,1],[1,76,.5],[1.5,79,1.5],[3,76,1]],
+    [[0,74,1],[1,79,1],[2,83,2]],
+    [[0,81,1.5],[1.5,79,.5],[2,76,1],[3,72,1]],
+    [[0,77,1],[1,76,1],[2,74,2]],
+    [[0,72,1],[1,76,.5],[1.5,79,1.5],[3,76,1]],
+    [[0,79,1],[1,83,1],[2,86,2]],
+    [[0,84,1],[1,83,1],[2,81,1],[3,79,1]],
+    [[0,77,1],[1,81,1],[2,84,2]],
+    [[0,84,.5],[.5,84,.5],[1,84,1],[2,86,1],[3,84,1]],
+    [[0,83,2],[2,79,2]],
+    [[0,79,1],[1,83,1],[2,88,2]],
+    [[0,84,3],[3,83,1]],
+    [[0,81,1],[1,84,1],[2,89,2]],
+    [[0,86,1],[1,88,1],[2,91,2]],
+    [[0,84,4]],
+    [[0,72,.5],[.5,76,.5],[1,79,.5],[1.5,84,2.5]],
+  ];
+  function scheduleSong(t0) {
+    const c = Audio_.ctx, bus = c.createGain(); bus.gain.value = .9; bus.connect(Audio_.out);
+    Audio_.music = bus;
+    CHORDS.forEach(([root, tri], bar) => {
+      const bt = t0 + bar * 4 * B;
+      // bateria
+      for (let b = 0; b < 4; b++) { kick(c, bus, bt + b * B, .9); if (b % 2) snare(c, bus, bt + b * B, .45); }
+      for (let e = 0; e < 8; e++) hat(c, bus, bt + e * B / 2, e % 2 ? .1 : .06);
+      if (bar % 4 === 0) crash(c, bus, bt);
+      // baixo em colcheias
+      for (let e = 0; e < 8; e++) bass(c, bus, bt + e * B / 2, root - 12 + (e % 4 === 3 ? 7 : 0), B / 2 * .9, .22);
+      // metais: stabs festivos
+      [[0, .9], [1.5, .45], [2.5, .45], [3, .9]].forEach(([o, d]) => tri.forEach(n => brass(c, bus, bt + o * B, n - 12, d * B, .07)));
+      // melodia
+      MELODY[bar].forEach(([o, n, d]) => lead(c, bus, bt + o * B, n, d * B * .95, .12));
+    });
+    return t0 + CHORDS.length * 4 * B;
+  }
+  function startMusic() {
+    const c = ctx(); if (!c) return false;
+    stopMusic();
+    Audio_.playing = true;
+    if (Audio_.fileUrl) {
+      Audio_.file = new Audio(Audio_.fileUrl); Audio_.file.loop = true; Audio_.file.volume = 1;
+      Audio_.file.play().catch(() => { Audio_.playing = false; showPlayButton(true); });
+    } else {
+      let next = scheduleSong(c.currentTime + .25);
+      const loop = () => { if (!Audio_.playing) return; if (next - c.currentTime < 4) next = scheduleSong(next); Audio_.loopTimer = setTimeout(loop, 1000); };
+      loop();
+    }
+    const t = c.currentTime + .1;
+    airhorn(t); airhorn(t + 1.1, .5); airhorn(t + 1.7, 1.2); cheer(t, 7);
+    return true;
+  }
+  function stopMusic() {
+    Audio_.playing = false;
+    clearTimeout(Audio_.loopTimer);
+    if (Audio_.music) { try { Audio_.music.gain.setTargetAtTime(0, Audio_.ctx.currentTime, .05); } catch (e) {} setTimeout(((m) => () => m.disconnect())(Audio_.music), 400); Audio_.music = null; }
+    if (Audio_.file) { Audio_.file.pause(); Audio_.file = null; }
+  }
+
+  // ---- fogos de artifício ----
+  const fw = $("fireworks"), fctx = fw.getContext("2d");
+  let rockets = [], sparks = [], fwRunning = false, autoFire = null;
+  const FW_COLORS = ["#ffbf4d", "#ff7a5c", "#ff5fa2", "#b98bff", "#5fd4e8", "#6fe0a0", "#ffffff"];
+  function sizeFw() { fw.width = innerWidth * devicePixelRatio; fw.height = innerHeight * devicePixelRatio; }
+  function launch(x) {
+    const W = fw.width, H = fw.height;
+    rockets.push({ x: x ?? W * (.15 + Math.random() * .7), y: H, vx: (Math.random() - .5) * 2, vy: -(H / 55) * (.8 + Math.random() * .35), c: FW_COLORS[Math.floor(Math.random() * FW_COLORS.length)] });
+    if (Audio_.ctx && Audio_.ctx.state === "running") whistle(Audio_.ctx.currentTime);
+  }
+  function explode(r) {
+    const n = 70 + Math.floor(Math.random() * 50), sp = 2 + Math.random() * 4, dpr = devicePixelRatio;
+    const ring = Math.random() < .3, c2 = FW_COLORS[Math.floor(Math.random() * FW_COLORS.length)];
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2, s = ring ? sp : sp * Math.random();
+      sparks.push({ x: r.x, y: r.y, vx: Math.cos(a) * s * dpr * 1.6, vy: Math.sin(a) * s * dpr * 1.6, life: 1, c: i % 3 ? r.c : c2 });
+    }
+    if (Audio_.ctx && Audio_.ctx.state === "running") boom(Audio_.ctx.currentTime);
+  }
+  function drawFw() {
+    fctx.globalCompositeOperation = "destination-out";
+    fctx.fillStyle = "rgba(0,0,0,.22)"; fctx.fillRect(0, 0, fw.width, fw.height);
+    fctx.globalCompositeOperation = "lighter";
+    const dpr = devicePixelRatio;
+    rockets.forEach(r => { r.x += r.vx; r.y += r.vy; r.vy += .12 * dpr; fctx.fillStyle = r.c; fctx.fillRect(r.x - 1.5 * dpr, r.y, 3 * dpr, 8 * dpr); if (r.vy >= -1) { r.dead = true; explode(r); } });
+    rockets = rockets.filter(r => !r.dead);
+    sparks.forEach(s => { s.x += s.vx; s.y += s.vy; s.vy += .05 * dpr; s.vx *= .985; s.vy *= .985; s.life -= .012;
+      fctx.globalAlpha = Math.max(0, s.life); fctx.fillStyle = s.c; fctx.beginPath(); fctx.arc(s.x, s.y, 2.2 * dpr, 0, 7); fctx.fill(); });
+    fctx.globalAlpha = 1;
+    sparks = sparks.filter(s => s.life > 0);
+    if (fwRunning || rockets.length || sparks.length) requestAnimationFrame(drawFw);
+  }
+
+  // ---- controle da festa ----
+  const party = $("party"), ticker = $("party-ticker");
+  const CHEERS = ["Missão cumprida!", "Notebook fechado com sucesso", "E-mail corporativo em modo avião", "Mais um ano vencido", "Campeões de 2026", "Rumo à praia, à rede e ao churrasco", "Sem reunião até janeiro", "Status: FÉRIAS"];
+  let tickerTimer = null, partyOn = false;
+  function showPlayButton(v) { $("btn-play").hidden = !v; }
+  function openParty(withSound) {
+    partyOn = true;
+    party.hidden = false;
+    sizeFw();
+    fwRunning = true; requestAnimationFrame(drawFw);
+    clearInterval(autoFire);
+    for (let i = 0; i < 5; i++) setTimeout(() => launch(), i * 220);
+    autoFire = setInterval(() => { const k = 1 + Math.floor(Math.random() * 3); for (let i = 0; i < k; i++) setTimeout(() => launch(), i * 180); }, 900);
+    confetti(); setTimeout(confetti, 1200); setTimeout(confetti, 2600);
+    document.body.classList.remove("shake"); void document.body.offsetWidth; document.body.classList.add("shake");
+    let ti = 0; ticker.textContent = "> " + CHEERS[0];
+    clearInterval(tickerTimer); tickerTimer = setInterval(() => { ti = (ti + 1) % CHEERS.length; ticker.textContent = "> " + CHEERS[ti]; }, 1800);
+    const playing = withSound && startMusic();
+    showPlayButton(!playing || (Audio_.ctx && Audio_.ctx.state !== "running"));
+    $("btn-close").focus();
+  }
+  function closeParty() {
+    partyOn = false;
+    party.hidden = true; fwRunning = false; clearInterval(autoFire); clearInterval(tickerTimer); stopMusic();
+    document.body.classList.remove("shake");
+  }
+  $("btn-play").addEventListener("click", () => { if (startMusic()) showPlayButton(false); });
+  $("btn-more").addEventListener("click", () => { for (let i = 0; i < 8; i++) setTimeout(() => launch(), i * 120); confetti(); if (Audio_.ctx) airhorn(Audio_.ctx.currentTime); });
+  $("btn-mute").addEventListener("click", () => { stopMusic(); showPlayButton(true); });
+  $("btn-close").addEventListener("click", closeParty);
+  addEventListener("keydown", e => { if (e.key === "Escape" && partyOn) closeParty(); });
+  addEventListener("resize", () => { if (partyOn) sizeFw(); });
+  document.querySelectorAll("[data-party]").forEach(b => b.addEventListener("click", () => { armSound(); openParty(true); }));
+
+  // ativar som (desbloqueio do navegador) + manter a tela acordada
+  function armSound() {
+    const c = ctx(); if (!c) return;
+    const o = c.createOscillator(), g = c.createGain(); g.gain.value = 0.0001; o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime + .05);
+    $("armed").textContent = "Som ativado. Deixe esta aba aberta: às 17:00:00 de 16/12 a festa começa sozinha.";
+    $("armed").classList.add("on");
+    $("btn-arm").textContent = "Som ativado";
+    try { navigator.wakeLock?.request("screen").then(l => { Audio_.lock = l; }).catch(() => {}); } catch (e) {}
+  }
+  $("btn-arm").addEventListener("click", () => { armSound(); if (Audio_.ctx) airhorn(Audio_.ctx.currentTime, .4); });
+  $("music-file").addEventListener("change", e => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    if (Audio_.fileUrl) URL.revokeObjectURL(Audio_.fileUrl);
+    Audio_.fileUrl = URL.createObjectURL(f);
+    armSound();
+    $("armed").textContent = `Música escolhida: ${f.name}. Ela toca na comemoração enquanto esta aba ficar aberta.`;
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && Audio_.lock) navigator.wakeLock?.request("screen").then(l => { Audio_.lock = l; }).catch(() => {});
+  });
+
+  // ---- ciclo principal ----
+  let lastDayKey = "", stats = null;
+  let wasCounting = VACATION - new Date() > 0, celebrated = false;
+
+  function tick() {
+    const now = new Date();
+    $("clock").innerHTML = `${now.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short", year: "numeric" })} · <b>${now.toLocaleTimeString("pt-BR")}</b>`;
+    const ms = Math.max(0, VACATION - now);
+    const days = Math.floor(ms / 864e5), h = Math.floor(ms / 36e5) % 24, m = Math.floor(ms / 6e4) % 60, s = Math.floor(ms / 1e3) % 60;
+    setDigits(calEls[0], days); setDigits(calEls[1], h); setDigits(calEls[2], m); setDigits(calEls[3], s);
+
+    if (ms === 0 && !celebrated) {
+      celebrated = true;
+      document.body.classList.add("on-vacation");
+      // chegou a hora com a página aberta: festa completa; se abriu depois, festa com botão de som
+      openParty(wasCounting);
+    }
+
+    const k = key(now) + (now.getHours() >= END_HOUR ? "p" : "a") + (ms === 0 ? "v" : "");
+    if (k !== lastDayKey) {
+      lastDayKey = k;
+      stats = workStats(now);
+      setDigits(utilEls, stats.work);
+      $("f-mondays").textContent = stats.mondays;
+      $("f-fridays").textContent = stats.fridays;
+      $("f-hol").textContent = stats.hol;
+      $("f-coffee").textContent = fmt(stats.work * 3);
+      $("f-weekends").textContent = stats.weekends;
+
+      const total = countWork(YEAR_START, LAST_DAY);
+      const left = stats.work;
+      const pct = Math.min(100, Math.max(0, (total - left) / total * 100));
+      $("pct").textContent = pct.toFixed(1).replace(".", ",") + "% do ano concluído";
+      $("done").style.width = pct + "%";
+      $("plane").style.left = pct + "%";
+      $("lbl-done").textContent = `${total - left} dias úteis voados`;
+      $("lbl-left").textContent = `${left} pela frente`;
+
+      renderMonths(now); renderHolidays(now);
+
+      const status = $("status");
+      if (ms === 0) status.textContent = "Em férias";
+      else if (left <= 1) status.textContent = "Último dia! Festa às 17:00";
+      else if (left <= 5) status.textContent = "Última chamada";
+      else if (left <= 20) status.textContent = "Embarque em breve";
+      else status.textContent = "No horário";
+    }
+    $("f-weeks").textContent = (ms / 6048e5).toFixed(1).replace(".", ",");
+    $("f-hours").textContent = fmt(Math.floor(ms / 36e5));
+  }
+
+  tick();
+  setInterval(tick, 1000);
+
+  const msgs = () => messages(stats, Math.ceil((VACATION - new Date()) / 864e5));
+  pushLine("Conectando à torre de controle de Franca…");
+  setTimeout(() => pushLine(msgs()[0]), 600);
+  setTimeout(() => pushLine(msgs()[2]), 1300);
+  msgIdx = 3;
+  const nextMsg = () => { const all = msgs(); pushLine(all[msgIdx % all.length]); msgIdx++; };
+  setInterval(nextMsg, 6000);
+  $("btn-msg").addEventListener("click", nextMsg);
+  $("btn-confetti").addEventListener("click", () => { confetti(); pushLine("Confete liberado. Ensaio geral da comemoração."); });
+})();
+</script>
+</body>
+</html>
