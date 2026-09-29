@@ -28,6 +28,12 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
+/* ajustes base: garantem o mesmo comportamento fora do Claude (GitHub Pages, arquivo local) */
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; }
+img, svg, canvas { max-width: 100%; }
 html, body { background: var(--bg); color: var(--fg); }
 body {
   font-family: var(--font-body);
